@@ -1,19 +1,21 @@
 #!/bin/bash
 #
-VERSION="2019-03-26 00:45"
+VERSION="2019-03-28 16:28"
 THIS_FILE="pkg-upgrade.sh"
 #
 # Brief Description
 #
-# Usage: bash pkg-upgrade.sh
-#        (not sh pkg-upgrade.sh)
+# Usage: bash osup.sh
+#        (not sh osup.sh)
 #
-# Script pkg-upgrade.sh will show a description of each upgradeable package before
+# Script osup.sh will show a description of each upgradeable package before
 # upgrading each package.
 #
 ## After each edit made, please update Code History and VERSION.
 ##
 ## Code Change History
+##
+## 2019-03-28 *Adjusted displayed package descriptions format.
 ##
 ## 2019-03-26 *Added detection of installed file viewer.
 ##
@@ -26,7 +28,6 @@ sed -i s/Listing...// uplist2.tmp  # Delete string "Listing...Done" from list of
 awk 'NF' uplist2.tmp > uplist.tmp  # Delete empty line left-over from deleting string.
 TITLE="***Description of upgradeable packages***"
 echo $TITLE > uplist2.tmp
-echo >> uplist2.tmp
 #
 echo $TITLE
 echo
@@ -34,7 +35,7 @@ while read XSTR
 do
       echo >> uplist2.tmp
       echo $XSTR >> uplist2.tmp
-      apt-cache show $XSTR | grep Description: --max-count=1 --after-context=2 >> uplist2.tmp
+      apt-cache show $XSTR | grep Description --max-count=1 --after-context=2 >> uplist2.tmp
 done < uplist.tmp
 # Detect installed file viewer.
 RUNAPP=0
