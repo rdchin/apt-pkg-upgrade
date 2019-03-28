@@ -5,8 +5,8 @@ THIS_FILE="pkg-upgrade.sh"
 #
 # Brief Description
 #
-# Usage: bash osup.sh
-#        (not sh osup.sh)
+# Usage: bash pkg-upgrade.sh
+#        (not sh pkg-upgrade.sh)
 #
 # Script osup.sh will show a description of each upgradeable package before
 # upgrading each package.
@@ -17,7 +17,7 @@ THIS_FILE="pkg-upgrade.sh"
 ##
 ## 2019-03-28 *Adjusted displayed package descriptions format. 
 ##            *Added message if there are no packages to update.
-##            *if there are no packages to update, do not create a report.
+##            *If there are no packages to update, do not create a report.
 ##
 ## 2019-03-26 *Added detection of installed file viewer.
 ##
@@ -58,5 +58,6 @@ if [ -s uplist.tmp ] ; then  # If tmp file has data (list of packages to be upda
 else
    echo
    echo "No packages to update. All packages are up to date."
-   #rm uplist*.tmp
 fi
+rm uplist*.tmp
+# Dun dun noodles.
