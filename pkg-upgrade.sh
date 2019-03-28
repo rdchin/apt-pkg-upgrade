@@ -5,8 +5,8 @@ THIS_FILE="pkg-upgrade.sh"
 #
 # Brief Description
 #
-# Usage: bash osup.sh
-#        (not sh osup.sh)
+# Usage: bash pkg-upgrade.sh
+#        (not sh pkg-upgrade.sh)
 #
 # Script osup.sh will show a description of each upgradeable package before
 # upgrading each package.
