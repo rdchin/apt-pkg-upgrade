@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-VERSION="2019-04-02 16:55"
+VERSION="2019-08-29 13:20"
 THIS_FILE="pkg-upgrade.sh"
 #
 # Brief Description
@@ -14,6 +14,10 @@ THIS_FILE="pkg-upgrade.sh"
 # After each edit made, please update Code History and VERSION.
 ##
 ## Code Change History
+##
+## 2019-08-29 *f_list_packages added for modularity.
+##            *Main Program added question for choice to list packages
+##             before upgrading or not.
 ##
 ## 2019-04-02 *f_abort_txt, f_test_connection added.
 ##            *Main Program move f_test_connection after f_arguments.
@@ -123,6 +127,51 @@ f_press_enter_key_to_continue () { # Display message and wait for user input.
       read X
       unset X  # Throw out this variable.
 } # End of function f_press_enter_key_to_continue.
+#
+# +----------------------------------------+
+# |       Function f_list_packages         |
+# +----------------------------------------+
+#
+#  Inputs: None.
+#    Uses: None.
+# Outputs: None.
+#
+f_list_packages () {
+      sudo apt list --upgradable > uplist.tmp  # Raw data output from command, "apt list".
+      awk -F / '{ print $1 }' uplist.tmp > uplist2.tmp  # Parse raw data to show each package title only.
+      sed -i s/Listing...// uplist2.tmp  # Delete string "Listing...Done" from list of packages.
+      awk 'NF' uplist2.tmp > uplist.tmp  # Delete empty line left-over from deleting string.
+      if [ -s uplist.tmp ] ; then  # If tmp file has data (list of packages to be updated).
+         TITLE="***Description of upgradeable packages***"
+         echo $TITLE > uplist2.tmp
+         #
+         echo $TITLE
+         echo
+         # Extract the "Description" from the raw data output from command "apt-cache show <pkg name>". 
+         while read XSTR
+         do
+               echo >> uplist2.tmp
+               echo $XSTR >> uplist2.tmp
+               apt-cache show $XSTR | grep Description --max-count=1 --after-context=2 >> uplist2.tmp
+         done < uplist.tmp
+         # Detect installed file viewer.
+         RUNAPP=0
+         for FILEVR in most more less
+             do
+             if [ $RUNAPP -eq 0 ] ; then
+                type $FILEVR >/dev/null 2>&1  # Test if $FILEVR application is installed.
+                ERROR=$?
+                if [ $ERROR -eq 0 ] ; then
+                   $FILEVR uplist2.tmp
+                   RUNAPP=1
+                fi
+             fi
+         done
+      else
+         echo
+         echo "No packages to update. All packages are up to date."
+      fi
+}  # End of function f_list_packages.
 #
 # +----------------------------------------+
 # |         Function f_arguments           |
@@ -278,40 +327,18 @@ if [ $ERROR -ne 0 ] ; then
 fi
 #
 sudo apt update
-sudo apt list --upgradable > uplist.tmp  # Raw data output from command, "apt list".
-awk -F / '{ print $1 }' uplist.tmp > uplist2.tmp  # Parse raw data to show each package title only.
-sed -i s/Listing...// uplist2.tmp  # Delete string "Listing...Done" from list of packages.
-awk 'NF' uplist2.tmp > uplist.tmp  # Delete empty line left-over from deleting string.
-if [ -s uplist.tmp ] ; then  # If tmp file has data (list of packages to be updated).
-   TITLE="***Description of upgradeable packages***"
-   echo $TITLE > uplist2.tmp
-   #
-   echo $TITLE
-   echo
-   # Extract the "Description" from the raw data output from command "apt-cache show <pkg name>". 
-   while read XSTR
-   do
-         echo >> uplist2.tmp
-         echo $XSTR >> uplist2.tmp
-         apt-cache show $XSTR | grep Description --max-count=1 --after-context=2 >> uplist2.tmp
-   done < uplist.tmp
-   # Detect installed file viewer.
-   RUNAPP=0
-   for FILEVR in most more less
-       do
-       if [ $RUNAPP -eq 0 ] ; then
-          type $FILEVR >/dev/null 2>&1  # Test if $FILEVR application is installed.
-          ERROR=$?
-          if [ $ERROR -eq 0 ] ; then
-             $FILEVR uplist2.tmp
-             RUNAPP=1
-          fi
-       fi
-   done
-   sudo apt upgrade
-else
-   echo
-   echo "No packages to update. All packages are up to date."
+echo
+echo -n "Do you want to view package descriptions? (there may be a delay to display descriptions) y/N: "
+read X
+case $X in
+     [Y][y] ) f_list_packages ;;
+     * ) ;;
+esac
+unset X  # Throw out this variable.
+#
+sudo apt upgrade
+#
+if [ -r uplist*.tmp ] ; then
+   rm uplist*.tmp
 fi
-rm uplist*.tmp
 # All dun dun noodles.
