@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-VERSION="2019-09-05 23:40"
+VERSION="2019-09-06 00:24"
 THIS_FILE="pkg-upgrade.sh"
 #
 # Brief Description
@@ -15,12 +15,14 @@ THIS_FILE="pkg-upgrade.sh"
 ##
 ## Code Change History
 ##
+## 2019-09-06 *Main Program regression bug fixes.
+##
 ## 2019-09-05 *Main Program enhancement if no updates, then do not offer
-##             to list packages.
+##             to list package descriptions.
 ##
 ## 2019-08-29 *f_list_packages added for modularity.
-##            *Main Program added question for choice to list packages
-##             before upgrading or not.
+##            *Main Program added question for choice to list package
+##             descriptions before upgrading or not.
 ##
 ## 2019-04-02 *f_abort_txt, f_test_connection added.
 ##            *Main Program move f_test_connection after f_arguments.
@@ -339,7 +341,7 @@ else
    echo -n "Do you want to view package descriptions? (there may be a delay to display descriptions) y/N: "
    read X
    case $X in
-        [Y] | [y] ) f_list_packages ;;
+        [Yy] | [Yy][Ee] | [Yy][Ee][Ss] ) f_list_packages ;;
         * ) ;;
    esac
    sudo apt upgrade
@@ -347,7 +349,11 @@ fi
 #
 unset X  # Throw out this variable.
 #
-if [ -r uplist*.tmp ] ; then
-   rm uplist*.tmp
+if [ -r uplist.tmp ] ; then
+   rm uplist.tmp
+fi
+#
+if [ -r uplist2.tmp ] ; then
+   rm uplist2.tmp
 fi
 # All dun dun noodles.
