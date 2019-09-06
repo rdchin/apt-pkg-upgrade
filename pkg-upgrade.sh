@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-VERSION="2019-08-30 11:05"
+VERSION="2019-09-05 23:40"
 THIS_FILE="pkg-upgrade.sh"
 #
 # Brief Description
@@ -15,13 +15,12 @@ THIS_FILE="pkg-upgrade.sh"
 ##
 ## Code Change History
 ##
-## 2019-08-30 *Main Program fix pattern matching of question for choice
-##             to list package descriptions before upgrading or not.
-##            *Main Program fix deletion of *.tmp files.
+## 2019-09-05 *Main Program enhancement if no updates, then do not offer
+##             to list packages.
 ##
 ## 2019-08-29 *f_list_packages added for modularity.
-##            *Main Program added question for choice to list package
-##             descriptions before upgrading or not.
+##            *Main Program added question for choice to list packages
+##             before upgrading or not.
 ##
 ## 2019-04-02 *f_abort_txt, f_test_connection added.
 ##            *Main Program move f_test_connection after f_arguments.
@@ -330,23 +329,25 @@ if [ $ERROR -ne 0 ] ; then
    f_abort_txt   
 fi
 #
-sudo apt update
-echo
-echo -n "Do you want to view package descriptions? (there may be a delay to display descriptions) y/N: "
-read X
-case $X in
-     [Yy] | [Yy][Ee] | [Yy][Ee][Ss] ) f_list_packages ;;
-     * ) ;;
-esac
-unset X  # Throw out this variable.
-#
-sudo apt upgrade
-#
-if [ -r uplist.tmp ] ; then
-   rm uplist.tmp
+sudo apt update | tee -a uplist.tmp
+X=$(tail -n 1 uplist.tmp)
+if [ "$X" = "All packages are up to date." ] ; then
+   echo "Up-to-date"
+else
+   echo "Not up-to-date"
+   echo
+   echo -n "Do you want to view package descriptions? (there may be a delay to display descriptions) y/N: "
+   read X
+   case $X in
+        [Y] | [y] ) f_list_packages ;;
+        * ) ;;
+   esac
+   sudo apt upgrade
 fi
 #
-if [ -r uplist2.tmp ] ; then
-   rm uplist2.tmp
+unset X  # Throw out this variable.
+#
+if [ -r uplist*.tmp ] ; then
+   rm uplist*.tmp
 fi
 # All dun dun noodles.
