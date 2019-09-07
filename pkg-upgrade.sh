@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-VERSION="2019-09-06 00:24"
+VERSION="2019-09-06 22:50"
 THIS_FILE="pkg-upgrade.sh"
 #
 # Brief Description
@@ -15,7 +15,7 @@ THIS_FILE="pkg-upgrade.sh"
 ##
 ## Code Change History
 ##
-## 2019-09-06 *Main Program regression bug fixes.
+## 2019-09-06 *Main Program regression bug fixes and minor enhancements.
 ##
 ## 2019-09-05 *Main Program enhancement if no updates, then do not offer
 ##             to list package descriptions.
@@ -344,6 +344,10 @@ else
         [Yy] | [Yy][Ee] | [Yy][Ee][Ss] ) f_list_packages ;;
         * ) ;;
    esac
+   echo
+   echo
+   echo "   *** Upgrading Packages ***"
+   echo
    sudo apt upgrade
 fi
 #
