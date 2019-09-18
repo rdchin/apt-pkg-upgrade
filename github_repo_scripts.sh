@@ -1,7 +1,7 @@
 #!/bin/bash
 #
-VERSION="2019-09-17 22:38"
-THIS_FILE="git_repo_scripts.sh"
+VERSION="2019-09-17 23:28"
+THIS_FILE="github_repo_scripts.sh"
 #
 # Specify TARGET Directory.
 TARGET_DIR="scripts_downloaded_from_github"
@@ -186,21 +186,21 @@ f_wget () {
          # Repository cli-app-menu.
          echo -n "Choose repository for project 'cli-app-menu' (Master/Testing/Develpment) (Testing): "; read ANS
          case $ANS in
-              [Mm]*)
+              [Mm][Aa][Ss][Tt][Ee][Rr] | [Mm][Aa][Ss][Tt][Ee] | [Mm][Aa][Ss][Tt] | [Mm][Aa][Ss] | [Mm][Aa] | [Mm])
                      REPOSITORY="https://raw.githubusercontent.com/rdchin/cli-app-menu/master/"
                      for SCRIPT in cliappmenu.sh lib_cli-common.lib lib_cli-menu-cat.lib lib_cli-web-sites.lib mod_apps-system.lib CODE_HISTORY COPYING EDIT_HISTORY LIST_APPS README
                      do
                        f_wget_do $REPOSITORY $SCRIPT $1
                      done
               ;;
-              [Tt]* | *)
+              [Tt][Ee][Ss][Tt][Ii][Nn][Gg] | Tt][Ee][Ss][Tt][Ii][Nn] | Tt][Ee][Ss][Tt][Ii] | Tt][Ee][Ss][Tt] | Tt][Ee][Ss] | [Tt][Ee] | [Tt])
                      REPOSITORY="https://raw.githubusercontent.com/rdchin/cli-app-menu/testing/"
                      for SCRIPT in cliappmenu.sh lib_cli-common.lib lib_cli-menu-cat.lib lib_cli-web-sites.lib menu_module_configuration.lib menu_module_information.lib menu_module_main.lib lib mod_apps-system.lib CODE_HISTORY COPYING EDIT_HISTORY LIST_APPS README
                      do
                        f_wget_do $REPOSITORY $SCRIPT $1
                      done
               ;;
-              [Dd]*)
+              [Dd][Ee][Vv][Ee][Ll][Oo][Pp][Mm][Ee][Nn][Tt] | [Dd][Ee][Vv][Ee][Ll][Oo][Pp][Mm][Ee][Nn] | [Dd][Ee][Vv][Ee][Ll][Oo][Pp][Mm][Ee] | [Dd][Ee][Vv][Ee][Ll][Oo][Pp][Mm] | [Dd][Ee][Vv][Ee][Ll][Oo][Pp] | [Dd][Ee][Vv][Ee][Ll][Oo] | [Dd][Ee][Vv][Ee][Ll] | [Dd][Ee][Vv][Ee] | [Dd][Ee][Vv] | [Dd][Ee] | [Dd])
                      REPOSITORY="https://raw.githubusercontent.com/rdchin/cli-app-menu/development/"
                      for SCRIPT in cliappmenu.sh lib_cli-common.lib lib_cli-menu-cat.lib lib_cli-web-sites.lib menu_module_app_categories.lib menu_module_app_mod_management.lib menu_module_configuration.lib menu_module_information.lib menu_module_list_find_menus.lib menu_module_main.lib menu_module_mod_management.lib menu_module_term_color.lib mod_apps-system.lib CODE_HISTORY COPYING EDIT_HISTORY LIST_APPS README
                      do
@@ -237,7 +237,7 @@ f_wget_do () {
       if [ $ERROR -ne 0 ] ; then
          echo
          echo "!!! wget download failed !!! for file:"
-         echo "$1/$2"
+         echo "$1$2"
          echo
          # try wget download one more time.
          wget $1$2
@@ -246,7 +246,7 @@ f_wget_do () {
          if [ $ERROR -ne 0 ] ; then
             echo
             echo "!!! wget download retry failed !!! for file:"
-            echo "$1/$2"
+            echo "$1$2"
             echo
             # Rename <TARGET_DIR>/<SCRIPT>.bak to <TARGET_DIR>/<SCRIPT>.
             mv ~/$3/$2.bak ~/$3/$2
