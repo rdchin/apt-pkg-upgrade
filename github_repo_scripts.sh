@@ -201,7 +201,7 @@ f_wget () {
                      done
               ;;
               [Dd][Ee][Vv][Ee][Ll][Oo][Pp][Mm][Ee][Nn][Tt] | [Dd][Ee][Vv][Ee][Ll][Oo][Pp][Mm][Ee][Nn] | [Dd][Ee][Vv][Ee][Ll][Oo][Pp][Mm][Ee] | [Dd][Ee][Vv][Ee][Ll][Oo][Pp][Mm] | [Dd][Ee][Vv][Ee][Ll][Oo][Pp] | [Dd][Ee][Vv][Ee][Ll][Oo] | [Dd][Ee][Vv][Ee][Ll] | [Dd][Ee][Vv][Ee] | [Dd][Ee][Vv] | [Dd][Ee] | [Dd])
-                     REPOSITORY="https://raw.githubusercontent.com/rdchin/cli-app-menu/development/"
+                     REPOSITORY="https://raw.githubusercontent.com/rdchin/cli-app-menu/develop/"
                      for SCRIPT in cliappmenu.sh lib_cli-common.lib lib_cli-menu-cat.lib lib_cli-web-sites.lib menu_module_app_categories.lib menu_module_app_mod_management.lib menu_module_configuration.lib menu_module_information.lib menu_module_list_find_menus.lib menu_module_main.lib menu_module_mod_management.lib menu_module_term_color.lib mod_apps-system.lib CODE_HISTORY COPYING EDIT_HISTORY LIST_APPS README
                      do
                        f_wget_do $REPOSITORY $SCRIPT $1
