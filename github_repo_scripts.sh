@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-VERSION="2019-09-17 23:28"
+VERSION="2020-03-21 20:50"
 THIS_FILE="github_repo_scripts.sh"
 #
 # Specify TARGET Directory.
@@ -17,6 +17,8 @@ TARGET_DIR="scripts_downloaded_from_github"
 ## After each edit made, please update Code History and VERSION.
 ##
 ## Code Change History
+##
+## 2020-03-21 *f_wget added menu_module_sub1.lib.
 ##
 ## 2019-09-17 *f_wget added new files from Development branch of repository
 ##             cli-app-menu.
@@ -150,7 +152,7 @@ f_wget () {
          SCRIPT="virusscan_clamav.sh"
          f_wget_do $REPOSITORY $SCRIPT $1
          #
-         # Repository rsync diroctories.
+         # Repository rsync directories.
          REPOSITORY="https://raw.githubusercontent.com/rdchin/rsync_directories/master/"
          SCRIPT="server_rsync.sh"
          f_wget_do $REPOSITORY $SCRIPT $1
@@ -178,7 +180,7 @@ f_wget () {
          #
          # Repository bash-automatic-menu-creator.
          REPOSITORY="https://raw.githubusercontent.com/rdchin/bash-automatic-menu-creator/master/"
-         for SCRIPT in menu.sh menu_module_main.lib menu_module_sub0.lib menu_module_sub0.lib
+         for SCRIPT in menu.sh menu_module_main.lib menu_module_sub0.lib menu_module_sub1.lib
          do
              f_wget_do $REPOSITORY $SCRIPT $1
          done
