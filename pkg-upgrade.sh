@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-VERSION="2019-09-06 22:50"
+VERSION="2020-03-22 11:53"
 THIS_FILE="pkg-upgrade.sh"
 #
 # Brief Description
@@ -14,6 +14,8 @@ THIS_FILE="pkg-upgrade.sh"
 # After each edit made, please update Code History and VERSION.
 ##
 ## Code Change History
+##
+## 2020-03-22 *f_list_packages improved display of package descriptions.
 ##
 ## 2019-09-06 *Main Program regression bug fixes and minor enhancements.
 ##
@@ -142,24 +144,35 @@ f_press_enter_key_to_continue () { # Display message and wait for user input.
 # Outputs: None.
 #
 f_list_packages () {
+      # File uplist.tmp contains only the package names of upgradable packages.
+      # File uplist2.tmp is a scratch file to support the creation of uplist.tmp.
       sudo apt list --upgradable > uplist.tmp  # Raw data output from command, "apt list".
       awk -F / '{ print $1 }' uplist.tmp > uplist2.tmp  # Parse raw data to show each package title only.
       sed -i s/Listing...// uplist2.tmp  # Delete string "Listing...Done" from list of packages.
       awk 'NF' uplist2.tmp > uplist.tmp  # Delete empty line left-over from deleting string.
+      #
       if [ -s uplist.tmp ] ; then  # If tmp file has data (list of packages to be updated).
+         #
+         # Create file uplist2.tmp to contain package name and short description.
+	 #
          TITLE="***Description of upgradeable packages***"
          echo $TITLE > uplist2.tmp
          #
          echo $TITLE
          echo
+	 #
          # Extract the "Description" from the raw data output from command "apt-cache show <pkg name>". 
+         # Read the file uplist.tmp.
          while read XSTR
          do
                echo >> uplist2.tmp
+               echo "---------------------------" >> uplist2.tmp
                echo $XSTR >> uplist2.tmp
-               apt-cache show $XSTR | grep Description --max-count=1 --after-context=2 >> uplist2.tmp
+	       # grep all package description text between strings "Description" and "Description-md5".
+               apt-cache show $XSTR | grep Description --max-count=1 --after-context=99 | grep Description-md5 --max-count=1 --before-context=99 | sed 's/^Description-md5.*$//'>> uplist2.tmp
          done < uplist.tmp
-         # Detect installed file viewer.
+         #
+         # Detect installed file viewer ("most", "more", or "less" file viewers).
          RUNAPP=0
          for FILEVR in most more less
              do
