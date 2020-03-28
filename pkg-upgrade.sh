@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-VERSION="2020-03-28 16:12"
+VERSION="2020-03-28 17:02"
 THIS_FILE="pkg-upgrade.sh"
 #
 #@ Brief Description
@@ -99,7 +99,7 @@ f_bad_sudo_password () {
       #
       case $1 in
            whiptail | dialog)
-           $GUI --colors --title "Incorrect Sudo password" --infobox "\n\Z1\ZbWrong Sudo password. Cannot upgrade software.\Zn" 6 50
+           f_message $1 "Incorrect Sudo password" "\n\n\n\Z1\Zb        Wrong Sudo password. Cannot upgrade software.\Zn"
            sleep 4
            #
            clear # Blank the screen.
@@ -508,7 +508,7 @@ f_message () {
       # Check if there is an internet connection before doing a download.
       case $1 in
            whiptail | dialog)
-           $1 --title "$2" --msgbox "$3" 12 70
+           $1 --colors --title "$2" --msgbox "$3" 12 70
            ;;
            *)
            echo
