@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-VERSION="2020-03-28 17:02"
+VERSION="2020-03-28 21:04"
 THIS_FILE="pkg-upgrade.sh"
 #
 #@ Brief Description
@@ -374,7 +374,7 @@ f_ques_upgrade_gui () {
       # Read the last line in the file uplist.tmp.
       X=$(tail -n 1 uplist.tmp)
       if [ "$X" = "All packages are up to date." ] ; then
-         f_message $1 "Status of Software Packages" "All packages are at the latest version."
+         f_message $1 "Status of Software Packages" "\n\nAll packages are at the latest version. Nothing to update."
          #
          clear # Blank the screen.
          #
