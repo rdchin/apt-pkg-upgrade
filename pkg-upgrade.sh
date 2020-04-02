@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-VERSION="2020-03-28 21:04"
+VERSION="2020-03-31 17:44"
 THIS_FILE="pkg-upgrade.sh"
 #
 #@ Brief Description
@@ -22,6 +22,8 @@ THIS_FILE="pkg-upgrade.sh"
 #?
 ##
 ## Code Change History
+##
+## 2020-03-31 *f_message rewritten to handle string and temp file input.
 ##
 ## 2020-03-28 *f_bad_sudo_password added.
 ##            *f_arguments added --hist.
@@ -72,15 +74,27 @@ f_abort () {
       #
       case $1 in
            whiptail | dialog)
-           $1 --colors --title "Exiting Script" --msgbox "\n\n\Z1                        ***************\n                        *** ABORTED ***\n                        ***************\n\n         An error occurred, cannot continue. Exiting script." 12 70
+           # Temporary file has \Z commands embedded for red bold font.
            #
-           clear # Blank the screen.
+           # \Z commands are used by Dialog to change font attributes 
+           # such as color, bold/normal.
            #
+           # A single string is used with echo -e \Z1\Zb\Zn commands
+           # and output as a single line of string wit \Zn commands embedded.
+           #
+           # Single string is neccessary because \Z commands will not be
+           # recognized in a temp file containing <CR><LF> multiple lines also.
+           #
+           # Create temporary file containing message.
+           TEMP_FILE="$THIS_FILE_temp_file.txt"
+           echo -e "\n\Z1\Zb                          ***************\n                          *** ABORTED ***\n                          ***************\n\n\n        An error occurred, cannot continue. Exiting script.\Zn" > $TEMP_FILE
+           #
+           f_message $1 "NOK" "Exiting script" $TEMP_FILE
            ;;
            *)
            echo $(tput setaf 1)    # Set font to color red.
            echo -n $(tput bold)
-           f_message $1 "Exiting Script" "***************\n*** ABORTED ***\n***************\n\nAn error occurred, cannot continue. Exiting script"
+           f_message $1 "NOK" "Exiting Script"  ">>>ABORTED <<<\n\n\nAn error occurred, cannot continue."
            echo -n $(tput sgr0)    # Set font to normal color.
            ;;
       esac
@@ -99,8 +113,7 @@ f_bad_sudo_password () {
       #
       case $1 in
            whiptail | dialog)
-           f_message $1 "Incorrect Sudo password" "\n\n\n\Z1\Zb        Wrong Sudo password. Cannot upgrade software.\Zn"
-           sleep 4
+           f_message $1 "NOK" "Incorrect Sudo password" "\n\Z1\ZbWrong Sudo password. Cannot upgrade software.\Zn"
            #
            clear # Blank the screen.
            #
@@ -109,9 +122,8 @@ f_bad_sudo_password () {
            echo
            echo $(tput setaf 1)    # Set font to color red.
            echo -n $(tput bold)
-           f_message $1 "     Password Error" "***************************\n*** Wrong Sudo password ***\n***************************\n\nCannot upgrade software. Exiting script"
+           f_message $1 "NOK" "     Password Error" ">>> Wrong Sudo password <<<\n\n\nCannot upgrade software. Exiting script."
            echo -n $(tput sgr0)    # Set font to normal color.
-           sleep 3
            ;;
       esac
 } # End of function f_bad_sudo_password.
@@ -187,9 +199,9 @@ f_test_connection () {
            ping -c 1 -q $2 >/dev/null # Ping server address.
            ERROR=$?
            if [ $ERROR -ne 0 ] ; then
-              f_message $1 "Ping Test Internet Connection" "Internet connnection to $2 file server failed.\n    Cannot get list of upgradable packages."
+              f_message $1 "NOK" "Ping Test Internet Connection" "\n\Z1\Zb     No Internet connection, cannot get list of upgradable packages.\Zn"
               else
-              f_message $1 "Ping Test Internet Connection" "Internet connnection to $2 is good."
+              f_message $1 "NOK" "Ping Test Internet Connection" "Internet connnection to $2 is good."
            fi
             #
            clear # Blank the screen.
@@ -204,12 +216,10 @@ f_test_connection () {
            if [ $ERROR -ne 0 ] ; then
               echo -n $(tput setaf 1) # Set font to color red.
               echo -n $(tput bold)
-              f_message $1 "Ping Test Internet Connecton" ">>> Internet connnection to $2 failed. <<<\n    Cannot get list of upgradable packages."
+              f_message $1 "NOK" "Ping Test Internet Connecton" ">>> No Internet connection, cannot get list of upgradable packages. <<<"
               echo -n $(tput sgr0)
-              f_press_enter_key_to_continue
            else
-              f_message $1 "Ping Test Internet Connecton" "Internet connnection to $2 is good."
-              f_press_enter_key_to_continue
+              f_message $1 "NOK" "Ping Test Internet Connecton" "Internet connnection to $2 is good."
               echo
               echo
            fi
@@ -374,11 +384,12 @@ f_ques_upgrade_gui () {
       # Read the last line in the file uplist.tmp.
       X=$(tail -n 1 uplist.tmp)
       if [ "$X" = "All packages are up to date." ] ; then
-         f_message $1 "Status of Software Packages" "\n\nAll packages are at the latest version. Nothing to update."
+         f_message $1 "NOK" "Status of Software Packages" "All packages are at the latest version."
          #
          clear # Blank the screen.
          #
       else
+         # Yes/No Dialog box.
          $1 --title "View Package Descriptions?" --yesno "\nSome packages are not up-to-date and need upgrading.\n\nNote: There may be a delay to display descriptions.\n      (especially if many packages need to be updated)\n\nDo you want to view package descriptions?" 12 70
          X=$?
          # X=0 when <Yes> button pressed.
@@ -388,7 +399,7 @@ f_ques_upgrade_gui () {
          if [ $X -eq 0 ] ; then
             f_list_packages
          fi
-         $1 --infobox "Running command: \"sudo apt upgrade\" to upgrade packages." 4 65 ; sleep 3
+         f_message $1 "NOK" "Upgrade Packages" "Running command: \"sudo apt upgrade\" to upgrade packages."
          #
          clear # Blank the screen.
          #
@@ -436,7 +447,7 @@ f_list_packages () {
          #
          f_show_package_descriptions
       else
-         f_message $GUI "Up-to-Date" "No packages to update. All packages are up to date."
+         f_message $GUI "NOK" "Up-to-Date" "No packages to update. All packages are up to date."
       fi
 }  # End of function f_list_packages.
 #
@@ -452,18 +463,9 @@ f_show_package_descriptions () {
       #
       case $GUI in
            dialog | whiptail)
-           # Calculate longest line length in TEMP_FILE to find maximum menu width for Dialog or Whiptail.
-           # The "Word Count" wc command output will not include the TEMP_FILE name
-           # if you redirect "<$TEMP_FILE" into wc.
            TEMP_FILE="uplist2.tmp"
-           X=$(wc --max-line-length <$TEMP_FILE)
-           let X=X+6
            #
-           # Calculate number of lines or Menu Choices to find maximum menu lines for Dialog or Whiptail.
-           Y=$(wc --lines <$TEMP_FILE)
-           let Y=Y+6
-           #
-           $GUI --title "About $THIS_FILE (use arrow keys to scroll up/down/side-ways)" --textbox $TEMP_FILE $Y $X
+           f_message $GUI "OK" "Package Description" $TEMP_FILE
            #
            if [ -r $TEMP_FILE ] ; then
               rm $TEMP_FILE
@@ -473,19 +475,8 @@ f_show_package_descriptions () {
            #
            ;;
            text)
-           # Detect installed file viewer ("most", "more", or "less" file viewers).
-           RUNAPP=0
-           for FILEVR in most more less
-               do
-                 if [ $RUNAPP -eq 0 ] ; then
-                    type $FILEVR >/dev/null 2>&1  # Test if $FILEVR application is installed.
-                    ERROR=$?
-                    if [ $ERROR -eq 0 ] ; then
-                       $FILEVR uplist2.tmp
-                       RUNAPP=1
-                    fi
-                 fi
-               done
+           TEMP_FILE="uplist2.tmp"
+           f_message $GUI "OK" "Package Description" $TEMP_FILE
            #
            clear # Blank the screen.
            #
@@ -505,20 +496,180 @@ f_show_package_descriptions () {
 #
 f_message () {
       #
-      # Check if there is an internet connection before doing a download.
       case $1 in
-           whiptail | dialog)
-           $1 --colors --title "$2" --msgbox "$3" 12 70
+           "dialog" | "whiptail")
+           # If text strings have Dialog \Z commands for font color bold/normal, 
+           # they must be used AFTER \n (line break) commands.
+           # Example: "This is a test.\n\Z1\ZbThis is in bold-red letters.\n\ZnThis is in normal font."
+           #
+           # Is $4 a text string or a text file?
+           #
+           # If $4 is a text file.
+           if [ -r "$4" ] ; then
+              #
+              # If text file, calculate number of lines and length of sentences.
+              # to calculate height and width of Dialog box.
+              #
+              # Calculate longest line length in TEMP_FILE to find maximum menu width for Dialog or Whiptail.
+              # The "Word Count" wc command output will not include the TEMP_FILE name
+              # if you redirect "<$TEMP_FILE" into wc.
+              X=$(wc --max-line-length <$4)
+              let X=X+10
+              #
+              # Calculate number of lines or Menu Choices to find maximum menu lines for Dialog or Whiptail.
+              Y=$(wc --lines <$4)
+              let Y=Y+6
+              #
+              # If $2 is "OK" then use a Dialog textbox.
+              if [ "$2" = "OK" ] ; then
+                 #
+                 $1 --colors --title "$3" --textbox "$4" $Y $X
+                 #
+              # If $2 is "NOK" then use a Dialog infobox.
+              else
+                 case $1 in
+                      whiptail)
+                      # Whiptail only does a --textbox or --msgbox (not --infobox).
+                      $1 --colors --title "$3" --textbox "$4" $Y $X
+                      ;;
+                      dialog)
+                      #
+                      # Translate "\n" or the <crlf> to "|". Join all lines together delimited by "|".
+                      #   $ cat $4 | tr "\n" "|" 
+                      #
+                      # Substitute string "|" with string "\n"
+                      #   $ sed -i 's/|/\\n/g' 
+                      #
+                      # Join all lines together delimited by string "\n" 
+                      # to allow the output of multiple lines of text in a single string variable
+                      # using the interpretation of back-slash escapes to recreate each line <CRLF>.
+                      #   $ cat $4 | tr "\n" "|"  > $4 ; sed -i 's/|/\\n/g' $4
+                      #
+                      # A Dialog Infobox displays the message in a window without you having to an press [OK] button.
+                      TEMP_FILE=$THIS_FILE"men.sh_temp2.txt"
+                      echo $4
+                      echo
+                      cat "$4" | tr "\n" "|"  > $TEMP_FILE ; sed -i 's/|/\\n/g' $TEMP_FILE
+                      Z=$(cat $TEMP_FILE)
+                      $1 --colors --title "$3" --infobox "$Z" $Y $X ; sleep 3
+                      ;;
+                 esac
+              fi
+              #
+              if [ -r $TEMP_FILE ] ; then
+                 rm $TEMP_FILE
+              fi
+              #
+           # If $4 is a text string.
+           else
+             # If $2 is "OK" then use a Dialog msgbox.
+             if [ "$2" = "OK" ] ; then
+                 #
+                 X=$(echo -n "$4" | wc -c)
+                 let X=X+10
+                 Y=7
+                 #
+                 $1 --colors --title "$3" --msgbox "$4" $Y $X
+                 # 
+              # If $2 is "NOK" then use a Dialog infobox.
+              else
+                 #
+                 X=$(echo -n "$4" | wc -c)
+                 let X=X+10
+                 Y=7
+                 #
+                 case $1 in
+                      whiptail)
+                      # Whiptail only does a --textbox or--msgbox (not --infobox).
+                      $1 --colors --title "$3" --msgbox "$4" $Y $X
+                      ;;
+                      dialog)
+                      $1 --colors --title "$3" --infobox "$4" $Y $X ; sleep 3                 
+                      ;;
+                 esac
+              fi
+           fi
            ;;
            *)
-           echo
-           echo -e "$2"
-           echo
-           echo -e "$3"
-           echo
+           # Is $4 a text string or a text file?
+           #
+           # If $4 is a text file.
+           if [ -r "$4" ] ; then
+              # If $2 is "OK" then use command "less".
+              if [ "$2" = "OK" ] ; then
+                 #
+                 clear  # Blank the screen.
+                 #
+                 # Display text file contents.
+                 less -P '%P\% (Spacebar, PgUp/PgDn, Up/Dn arrows, press q to quit)' $4
+                 #
+                 clear  # Blank the screen.
+                 #
+              # If $2 is "NOK" then use "cat" and "sleep" commands to give time to read it.
+              else
+                 #
+                 clear  # Blank the screen.
+                 # Display title.
+                 echo
+                 echo -e $3
+                 echo
+                 echo
+                 # Display text file contents.
+                 cat $4
+                 sleep 5
+                 #
+                 clear  # Blank the screen.
+                 #
+              fi
+              #
+              if [ -r $TEMP_FILE ] ; then
+                 rm $TEMP_FILE
+              fi
+              #
+           # If $4 is a text string.
+           else
+              # If $2 is "OK" then use f_press_enter_key_to_continue.
+              if [ "$2" = "OK" ] ; then
+                 #
+                 clear  # Blank the screen.
+                 #
+                 # Display title.
+                 echo
+                 echo -e $3
+                 echo
+                 echo
+                 # Display text string.
+                 echo -e $4
+                 echo
+                 f_press_enter_key_to_continue
+                 #
+                 clear  # Blank the screen.
+                 #
+              # If $2 is "NOK" use "echo" followed by "sleep" commands 
+              # to give time to read it.
+              else
+                 #
+                 clear  # Blank the screen.
+                 #
+                 # Display title.
+                 echo
+                 echo -e $3
+                 echo
+                 echo
+                 # Display text string.
+                 echo -e $4
+                 echo
+                 echo
+                 sleep 5
+                 #
+                 clear  # Blank the screen.
+                 #
+              fi
+           fi
            ;;
       esac
 } # End of function f_message.
+#
 #
 # +------------------------------------+
 # |          Function f_about          |
@@ -898,3 +1049,5 @@ if [ -r uplist2.tmp ] ; then
    rm uplist2.tmp
 fi
 # All dun dun noodles.
+
+
