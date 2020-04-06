@@ -709,7 +709,8 @@ f_message () {
                  clear  # Blank the screen.
                  #
               else
-                 # If $2 is "NOK" then use f_press_enter_key_to_continue.
+                 # If $2 is "NOK" then use "echo" followed by "sleep" commands
+                 # to give time to read it.
                  #
                  clear  # Blank the screen.
                  #
