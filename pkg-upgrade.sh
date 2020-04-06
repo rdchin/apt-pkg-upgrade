@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-VERSION="2020-03-31 17:44"
+VERSION="2020-04-05 23:59"
 THIS_FILE="pkg-upgrade.sh"
 #
 #@ Brief Description
@@ -22,6 +22,10 @@ THIS_FILE="pkg-upgrade.sh"
 #?
 ##
 ## Code Change History
+##
+## 2020-04-05 *f_message made more Whiptail compatible.
+##
+## 2020-03-31 *f_message, f_test_connection bug fixes for Whiptail.
 ##
 ## 2020-03-31 *f_message rewritten to handle string and temp file input.
 ##
@@ -73,7 +77,7 @@ THIS_FILE="pkg-upgrade.sh"
 f_abort () {
       #
       case $1 in
-           whiptail | dialog)
+           dialog)
            # Temporary file has \Z commands embedded for red bold font.
            #
            # \Z commands are used by Dialog to change font attributes 
@@ -88,6 +92,13 @@ f_abort () {
            # Create temporary file containing message.
            TEMP_FILE="$THIS_FILE_temp_file.txt"
            echo -e "\n\Z1\Zb                          ***************\n                          *** ABORTED ***\n                          ***************\n\n\n        An error occurred, cannot continue. Exiting script.\Zn" > $TEMP_FILE
+           #
+           f_message $1 "NOK" "Exiting script" $TEMP_FILE
+           ;;
+           whiptail)
+           # Create temporary file containing message.
+           TEMP_FILE="$THIS_FILE_temp_file.txt"
+           echo -e "\n\                          ***************\n                          *** ABORTED ***\n                          ***************\n\n\n        An error occurred, cannot continue. Exiting script." > $TEMP_FILE
            #
            f_message $1 "NOK" "Exiting script" $TEMP_FILE
            ;;
@@ -489,8 +500,12 @@ f_show_package_descriptions () {
 # +------------------------------+
 #
 #  Inputs: $1 - "text", "dialog" or "whiptail" The CLI GUI application in use.
-#          $2 - Title.
-#          $3 - Text message. 
+#          $2 - "OK"  [OK] button at end of text.
+#               "NOK" No [OK] button at end of text but pause n seconds
+#                     to allow reader to read text by using sleep n command.
+#          $3 - Title.
+#          $4 - Text string or text file. 
+#          
 #    Uses: None.
 # Outputs: ERROR. 
 #
@@ -498,14 +513,20 @@ f_message () {
       #
       case $1 in
            "dialog" | "whiptail")
+           #
            # If text strings have Dialog \Z commands for font color bold/normal, 
            # they must be used AFTER \n (line break) commands.
            # Example: "This is a test.\n\Z1\ZbThis is in bold-red letters.\n\ZnThis is in normal font."
            #
            # Is $4 a text string or a text file?
-           #
-           # If $4 is a text file.
            if [ -r "$4" ] ; then
+              # If $4 is a text file.
+              #
+              # Get the screen resolution or X-window size.
+              # Get rows (height).
+              YY=$(stty size | awk '{ print $1 }')
+              # Get columns (width).
+              XX=$(stty size | awk '{ print $2 }')
               #
               # If text file, calculate number of lines and length of sentences.
               # to calculate height and width of Dialog box.
@@ -514,23 +535,55 @@ f_message () {
               # The "Word Count" wc command output will not include the TEMP_FILE name
               # if you redirect "<$TEMP_FILE" into wc.
               X=$(wc --max-line-length <$4)
-              let X=X+10
               #
               # Calculate number of lines or Menu Choices to find maximum menu lines for Dialog or Whiptail.
               Y=$(wc --lines <$4)
-              let Y=Y+6
               #
-              # If $2 is "OK" then use a Dialog textbox.
               if [ "$2" = "OK" ] ; then
+                 # If $2 is "OK" then use a Dialog/Whiptail textbox.
                  #
-                 $1 --colors --title "$3" --textbox "$4" $Y $X
+                 case $1 in
+                      dialog)
+                      # Dialog needs about 6 more lines for the header and [OK] button.
+                      let Y=Y+6
+                      # If number of lines exceeds screen/window height then set textbox height.
+                      if [ $Y -ge $YY ] ; then
+                         Y=$YY
+                      fi
+                      #
+                      # Dialog needs about 10 more spaces for the right and left window frame. 
+                      let X=X+10
+                      # If line length exceeds screen/window width then set textbox width.
+                      if [ $X -ge $XX ] ; then
+                         X=$XX
+                      fi
+                      dialog --colors --title "$3" --textbox "$4" $Y $X
+                      ;;
+                      whiptail)
+                      # Whiptail does not have OPTION --colors.
+                      # Whiptail needs about 6 more lines for the header and [OK] button.
+                      let Y=Y+6
+                      # If number of lines exceeds screen/window height then set textbox height.
+                      if [ $Y -ge $YY ] ; then
+                         Y=$YY
+                      fi
+                      #
+                      # Whiptail needs about 5 more spaces for the right and left window frame. 
+                      let X=X+5
+                      # If line length exceeds screen/window width then set textbox width.
+                      if [ $X -ge $XX ] ; then
+                         X=$XX
+                      fi
+                      whiptail --scrolltext --title "$3" --textbox "$4" $Y $X
+                      ;;
+                 esac
                  #
-              # If $2 is "NOK" then use a Dialog infobox.
               else
+                 # If $2 is "NOK" then use a Dialog infobox or Whiptail textbox.
                  case $1 in
                       whiptail)
                       # Whiptail only does a --textbox or --msgbox (not --infobox).
-                      $1 --colors --title "$3" --textbox "$4" $Y $X
+                      whiptail --title "$3" --textbox "$4" $Y $X
                       ;;
                       dialog)
                       #
@@ -551,7 +604,7 @@ f_message () {
                       echo
                       cat "$4" | tr "\n" "|"  > $TEMP_FILE ; sed -i 's/|/\\n/g' $TEMP_FILE
                       Z=$(cat $TEMP_FILE)
-                      $1 --colors --title "$3" --infobox "$Z" $Y $X ; sleep 3
+                      dialog --colors --title "$3" --infobox "$Z" $Y $X ; sleep 3
                       ;;
                  esac
               fi
@@ -560,19 +613,11 @@ f_message () {
                  rm $TEMP_FILE
               fi
               #
-           # If $4 is a text string.
            else
-             # If $2 is "OK" then use a Dialog msgbox.
-             if [ "$2" = "OK" ] ; then
-                 #
-                 X=$(echo -n "$4" | wc -c)
-                 let X=X+10
-                 Y=7
-                 #
-                 $1 --colors --title "$3" --msgbox "$4" $Y $X
-                 # 
-              # If $2 is "NOK" then use a Dialog infobox.
-              else
+              # If $4 is a text string.
+              #
+              if [ "$2" = "OK" ] ; then
+                 # If $2 is "OK" then use a Dialog msgbox.
                  #
                  X=$(echo -n "$4" | wc -c)
                  let X=X+10
@@ -581,22 +626,39 @@ f_message () {
                  case $1 in
                       whiptail)
                       # Whiptail only does a --textbox or--msgbox (not --infobox).
-                      $1 --colors --title "$3" --msgbox "$4" $Y $X
+                      whiptail --title "$3" --msgbox "$4" $Y $X
                       ;;
                       dialog)
-                      $1 --colors --title "$3" --infobox "$4" $Y $X ; sleep 3                 
+                      dialog --colors --title "$3" --msgbox "$4" $Y $X
                       ;;
                  esac
-              fi
+              else
+                 # If $2 is "NOK" then use a Dialog infobox.
+                 #
+                 X=$(echo -n "$4" | wc -c)
+                 let X=X+10
+                 Y=7
+                 #
+                 case $1 in
+                      whiptail)
+                      # Whiptail only does a --textbox or--msgbox (not --infobox).
+                      whiptail --title "$3" --msgbox "$4" $Y $X
+                      ;;
+                      dialog)
+                      dialog --colors --title "$3" --infobox "$4" $Y $X ; sleep 3
+                      ;;
+                  esac
+               fi
            fi
            ;;
            *)
            # Is $4 a text string or a text file?
            #
-           # If $4 is a text file.
            if [ -r "$4" ] ; then
-              # If $2 is "OK" then use command "less".
+              # If $4 is a text file.
+              #
               if [ "$2" = "OK" ] ; then
+                 # If $2 is "OK" then use command "less".
                  #
                  clear  # Blank the screen.
                  #
@@ -605,13 +667,13 @@ f_message () {
                  #
                  clear  # Blank the screen.
                  #
-              # If $2 is "NOK" then use "cat" and "sleep" commands to give time to read it.
               else
+                 # If $2 is "NOK" then use "cat" and "sleep" commands to give time to read it.
                  #
                  clear  # Blank the screen.
                  # Display title.
                  echo
-                 echo -e $3
+                 echo $3
                  echo
                  echo
                  # Display text file contents.
@@ -626,10 +688,11 @@ f_message () {
                  rm $TEMP_FILE
               fi
               #
-           # If $4 is a text string.
            else
-              # If $2 is "OK" then use f_press_enter_key_to_continue.
+              # If $4 is a text string.
+              #
               if [ "$2" = "OK" ] ; then
+                 # If $2 is "OK" then use f_press_enter_key_to_continue.
                  #
                  clear  # Blank the screen.
                  #
@@ -638,16 +701,15 @@ f_message () {
                  echo -e $3
                  echo
                  echo
-                 # Display text string.
+                 # Display text file contents.
                  echo -e $4
                  echo
                  f_press_enter_key_to_continue
                  #
                  clear  # Blank the screen.
                  #
-              # If $2 is "NOK" use "echo" followed by "sleep" commands 
-              # to give time to read it.
               else
+                 # If $2 is "NOK" then use f_press_enter_key_to_continue.
                  #
                  clear  # Blank the screen.
                  #
@@ -656,7 +718,7 @@ f_message () {
                  echo -e $3
                  echo
                  echo
-                 # Display text string.
+                 # Display text file contents.
                  echo -e $4
                  echo
                  echo
@@ -669,7 +731,6 @@ f_message () {
            ;;
       esac
 } # End of function f_message.
-#
 #
 # +------------------------------------+
 # |          Function f_about          |
