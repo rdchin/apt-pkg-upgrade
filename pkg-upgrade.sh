@@ -1,27 +1,65 @@
 #!/bin/bash
 #
-VERSION="2020-04-05 23:59"
+# ©2020 Copyright 2020 Robert D. Chin
+#
+# Usage: bash pkg-upgrade.sh
+#        (not sh pkg-upgrade.sh)
+#
+# +----------------------------------------+
+# |        Default Variable Values         |
+# +----------------------------------------+
+#
+VERSION="2020-04-11 15:01"
 THIS_FILE="pkg-upgrade.sh"
+#
+# +----------------------------------------+
+# |            Brief Description           |
+# +----------------------------------------+
 #
 #@ Brief Description
 #@
 #@ Script pkg-upgrade.sh will show a description of each upgradable package before
 #@ upgrading each package.
 #@
+#@ Required scripts: None
+#@
 #@ Usage: bash pkg-upgrade.sh
 #@        (not sh pkg-upgrade.sh)
-#@
-#@ After each edit made, please update Code History and VERSION.
 #
+# +----------------------------------------+
+# |             Help and Usage             |
+# +----------------------------------------+
+#
+#?    Usage: bash pkg-upgrade.sh [OPTION]
+#? Examples:
+#?bash pkg-upgrade.sh text       Use Cmd-line user-interface (80x24 min.).
+#?                    dialog     Use Dialog   user-interface.
+#?                    whiptail   Use Whiptail user-interface.
 #?
-#? Usage: bash pkg-upgrade.sh [OPTION]
-#?        bash pkg-upgrade.sh --help     # Displays this help message.
-#?        bash pkg-upgrade.sh --version  # Displays script version.
-#?        bash pkg-upgrade.sh --about    # Displays script version.
-#?        bash pkg-upgrade.sh --history  # Displays script code history.
+#?bash pkg-upgrade.sh --help     Displays this help message.
+#?                    -?
 #?
+#?bash pkg-upgrade.sh --about    Displays script version.
+#?                    --version
+#?                    --ver
+#?                    -v
+#?
+#?bash pkg-upgrade.sh --history  Displays script code history.
+#?                    --hist
+#
+# +----------------------------------------+
+# |           Code Change History          |
+# +----------------------------------------+
+#
 ##
 ## Code Change History
+##
+## (After each edit made, please update Code History and VERSION.)
+##
+## 2020-04-11 *f_message and messages throughout script rewritten
+##             for better compatibility between CLI, Dialog, Whiptail. 
+##
+## 2020-04-06 *f_arguments standardized.
 ##
 ## 2020-04-05 *f_message made more Whiptail compatible.
 ##
@@ -77,7 +115,7 @@ THIS_FILE="pkg-upgrade.sh"
 f_abort () {
       #
       case $1 in
-           dialog)
+           dialog | whiptail)
            # Temporary file has \Z commands embedded for red bold font.
            #
            # \Z commands are used by Dialog to change font attributes 
@@ -89,23 +127,14 @@ f_abort () {
            # Single string is neccessary because \Z commands will not be
            # recognized in a temp file containing <CR><LF> multiple lines also.
            #
-           # Create temporary file containing message.
-           TEMP_FILE="$THIS_FILE_temp_file.txt"
-           echo -e "\n\Z1\Zb                          ***************\n                          *** ABORTED ***\n                          ***************\n\n\n        An error occurred, cannot continue. Exiting script.\Zn" > $TEMP_FILE
-           #
-           f_message $1 "NOK" "Exiting script" $TEMP_FILE
-           ;;
-           whiptail)
-           # Create temporary file containing message.
-           TEMP_FILE="$THIS_FILE_temp_file.txt"
-           echo -e "\n\                          ***************\n                          *** ABORTED ***\n                          ***************\n\n\n        An error occurred, cannot continue. Exiting script." > $TEMP_FILE
-           #
-           f_message $1 "NOK" "Exiting script" $TEMP_FILE
+           #f_message $1 "NOK" "Exiting script" " \n\Z1\ZbFATAL ERROR\n \n \nAn error occurred, cannot continue.\n Exiting script.\Zn"
+           f_message $1 "NOK" "Exiting script" " \n\Z1\ZbAn error occurred, cannot continue. Exiting script.\Zn"
            ;;
            *)
+           # The only reason to have a separate message for GUI=text, is for red color fonts.
            echo $(tput setaf 1)    # Set font to color red.
            echo -n $(tput bold)
-           f_message $1 "NOK" "Exiting Script"  ">>>ABORTED <<<\n\n\nAn error occurred, cannot continue."
+           f_message $1 "NOK" "Exiting Script" ">>>FATAL ERROR<<<\n\nAn error occurred, cannot continue."
            echo -n $(tput sgr0)    # Set font to normal color.
            ;;
       esac
@@ -130,6 +159,7 @@ f_bad_sudo_password () {
            #
            ;;
            *)
+           # The only reason to have a separate message for GUI=text, is for red color fonts.
            echo
            echo $(tput setaf 1)    # Set font to color red.
            echo -n $(tput bold)
@@ -210,7 +240,7 @@ f_test_connection () {
            ping -c 1 -q $2 >/dev/null # Ping server address.
            ERROR=$?
            if [ $ERROR -ne 0 ] ; then
-              f_message $1 "NOK" "Ping Test Internet Connection" "\n\Z1\Zb     No Internet connection, cannot get list of upgradable packages.\Zn"
+              f_message $1 "NOK" "Ping Test Internet Connection" " \n\Z1\Zb  No Internet connection, cannot get list of upgradable packages.\Zn"
               else
               f_message $1 "NOK" "Ping Test Internet Connection" "Internet connnection to $2 is good."
            fi
@@ -219,6 +249,7 @@ f_test_connection () {
            #
            ;;
            *)
+           # The only reason to have a separate message for GUI=text, is for red color fonts.
            echo
            echo "Test Internet Connection to $2"
            echo
@@ -269,56 +300,53 @@ f_press_enter_key_to_continue () {
 # Outputs: ERROR.
 #
 f_arguments () {
-      #
       # If there is more than one argument, display help USAGE message, because only one argument is allowed.
-      #
       if [ $# -ge 2 ] ; then
-         f_help_message
+         f_help_message text
          exit 0  # This cleanly closes the process generated by #!bin/bash. 
                  # Otherwise every time this script is run, another instance of
                  # process /bin/bash is created using up resources.
       fi
       #
       case $1 in
-           --help | "--?" | "-?" | "?")
+           --help | "-?")
            # If the one argument is "--help" display help USAGE message.
-           f_help_message
+           f_help_message text
            exit 0  # This cleanly closes the process generated by #!bin/bash. 
                    # Otherwise every time this script is run, another instance of
                    # process /bin/bash is created using up resources.
            ;;
-           -v | -ver | --version | --about)
-           f_about_txt
+           --about | --version | --ver | -v)
+           f_about text
            exit 0  # This cleanly closes the process generated by #!bin/bash. 
                    # Otherwise every time this script is run, another instance of
                    # process /bin/bash is created using up resources.
            ;;
-           --hist | --history)
-           f_code_history_txt
+           --history | --hist)
+           f_code_history text
            exit 0  # This cleanly closes the process generated by #!bin/bash. 
                    # Otherwise every time this script is run, another instance of
                    # process /bin/bash is created using up resources.
            ;;
            -*)
            # If the one argument is "-<unrecognized>" display help USAGE message.
-           f_help_message
+           f_help_message text
            exit 0  # This cleanly closes the process generated by #!bin/bash. 
                    # Otherwise every time this script is run, another instance of
                    # process /bin/bash is created using up resources.
            ;;
-           "text" | "dialog" | "whiptail")
-           GUI=$1  # Do not exit script, no "exit 0".
-           ;;
-           "")
-           # Null is a valid argument.
+           "" | "text" | "dialog" | "whiptail")
+           GUI=$1
            ;;
            *)
-           # if the argument is out of bounds, then display the help USAGE message.
-           echo "Invalid argument input. See help above or type command, \"bash $THIS_FILE --help\""
-           f_abort text
+           # Display help USAGE message.
+           f_help_message text
+           exit 0  # This cleanly closes the process generated by #!bin/bash. 
+                   # Otherwise every time this script is run, another instance of
+                   # process /bin/bash is created using up resources.
            ;;
       esac
-}  # End of function f_arguments.
+} # End of function f_arguments.
 #
 # +------------------------------------+
 # |      Function f_ques_upgrade       |
@@ -331,67 +359,6 @@ f_arguments () {
 #
 f_ques_upgrade () {
       #
-      case $GUI in
-           "dialog" | "whiptail") 
-           f_ques_upgrade_gui $GUI
-           ;;
-           *)
-           f_ques_upgrade_txt
-           ;;
-      esac
-} # End of f_ques_upgrade.
-#
-# +----------------------------------------+
-# |      Function f_ques_upgrade_txt       |
-# +----------------------------------------+
-#
-#  Inputs: None.
-#    Uses: None.
-# Outputs: None.
-#
-f_ques_upgrade_txt () {
-      #
-      # Read the last line in the file uplist.tmp.
-      X=$(tail -n 1 uplist.tmp)
-      if [ "$X" = "All packages are up to date." ] ; then
-         echo
-         echo "All packages are at the latest version."
-         echo
-      else
-         echo
-         echo "Some packages are not up-to-date and need upgrading."
-         echo
-         echo "Note: There may be a delay to display descriptions."
-         echo "      (especially if many packages need to be updated)"
-         echo
-         echo -n "Do you want to view package descriptions? y/N: "
-         read X
-         case $X in
-              [Yy] | [Yy][Ee] | [Yy][Ee][Ss] ) f_list_packages
-              ;;
-              * ) 
-              ;;
-         esac
-         echo
-         echo
-         echo "   *** Upgrading Packages ***"
-         echo
-         sudo apt upgrade
-      fi
-      #
-      unset X  # Throw out this variable.
-}  # End of function f_ques_upgrade_txt.
-#
-# +----------------------------------------+
-# |      Function f_ques_upgrade_gui       |
-# +----------------------------------------+
-#
-#  Inputs: $1=GUI.
-#    Uses: None.
-# Outputs: None.
-#
-f_ques_upgrade_gui () {
-      #
       # Read the last line in the file uplist.tmp.
       X=$(tail -n 1 uplist.tmp)
       if [ "$X" = "All packages are up to date." ] ; then
@@ -400,14 +367,14 @@ f_ques_upgrade_gui () {
          clear # Blank the screen.
          #
       else
-         # Yes/No Dialog box.
-         $1 --title "View Package Descriptions?" --yesno "\nSome packages are not up-to-date and need upgrading.\n\nNote: There may be a delay to display descriptions.\n      (especially if many packages need to be updated)\n\nDo you want to view package descriptions?" 12 70
-         X=$?
-         # X=0 when <Yes> button pressed.
-         # X=1 when <No> button pressed.
+         # Yes/No Question.
+         f_yn_question $1 "Y" "View Package Descriptions?" "\nSome packages are not up-to-date and need upgrading.\n\nNote: There may be a delay to display descriptions.\n      (especially if many packages need to be updated)\n\nDo you want to view package descriptions?"
+
+         # ANS=0 when <Yes> button pressed.
+         # ANS=1 when <No> button pressed.
          #
          # if <Yes> button pressed, then list packages.
-         if [ $X -eq 0 ] ; then
+         if [ $ANS -eq 0 ] ; then
             f_list_packages
          fi
          f_message $1 "NOK" "Upgrade Packages" "Running command: \"sudo apt upgrade\" to upgrade packages."
@@ -428,72 +395,49 @@ f_ques_upgrade_gui () {
 #
 f_list_packages () {
       #
-      # File uplist.tmp contains only the package names of upgradable packages.
-      # File uplist2.tmp is a scratch file to support the creation of uplist.tmp.
-      sudo apt list --upgradable > uplist.tmp  # Raw data output from command, "apt list".
-      awk -F / '{ print $1 }' uplist.tmp > uplist2.tmp  # Parse raw data to show each package title only.
-      sed -i s/Listing...// uplist2.tmp  # Delete string "Listing...Done" from list of packages.
-      awk 'NF' uplist2.tmp > uplist.tmp  # Delete empty line left-over from deleting string.
+      # File TEMP_FILE="$THIS_FILE_temp_file.txt" contains only the package names of upgradable packages.
+      # File TEMP_FILE2="$THIS_FILE_temp_file2.txt is a scratch file to support the creation of uplist.tmp.
       #
-      if [ -s uplist.tmp ] ; then  # If tmp file has data (list of packages to be updated).
+      TEMP_FILE="$THIS_FILE_temp_file.txt"
+      # Raw data output from command, "apt list".
+      sudo apt list --upgradable > $TEMP_FILE
+      #
+      # Parse raw data to show each package title only.
+      TEMP_FILE2="$THIS_FILE_temp_file2.txt"
+      awk -F / '{ print $1 }' $TEMP_FILE > $TEMP_FILE2
+      #
+      # Delete string "Listing...Done" from list of packages.
+      sed -i s/Listing...// $TEMP_FILE2
+      #
+      # Delete empty line left-over from deleting string.
+      awk 'NF' $TEMP_FILE2 > $TEMP_FILE
+      #
+      # If tmp file has data (list of packages to be updated).
+      if [ -s $TEMP_FILE ] ; then
          #
-         # Create file uplist2.tmp to contain package name and short description.
-	 #
+         # Create file $TEMP_FILE2 to contain package name and short description.
+         #
          TITLE="***Description of upgradable packages***"
-         echo $TITLE > uplist2.tmp
+         echo $TITLE > $TEMP_FILE2
          #
-         echo $TITLE
-         echo
-	 #
          # Extract the "Description" from the raw data output from command "apt-cache show <pkg name>". 
          # Read the file uplist.tmp.
          while read XSTR
          do
-               echo >> uplist2.tmp
-               echo "---------------------------" >> uplist2.tmp
-               echo $XSTR >> uplist2.tmp
-	       # grep all package description text between strings "Description" and "Description-md5".
-               apt-cache show $XSTR | grep Description --max-count=1 --after-context=99 | grep Description-md5 --max-count=1 --before-context=99 | sed 's/^Description-md5.*$//'>> uplist2.tmp
-         done < uplist.tmp
+               echo >> $TEMP_FILE2
+               echo "---------------------------" >> $TEMP_FILE2
+               echo $XSTR >> $TEMP_FILE2
+               #
+               # grep all package description text between strings "Description" and "Description-md5".
+               apt-cache show $XSTR | grep Description --max-count=1 --after-context=99 | grep Description-md5 --max-count=1 --before-context=99 | sed 's/^Description-md5.*$//'>> $TEMP_FILE2
+         done < $TEMP_FILE
          #
-         f_show_package_descriptions
+         f_message $GUI "OK" "Package Description" $TEMP_FILE
+         #
       else
          f_message $GUI "NOK" "Up-to-Date" "No packages to update. All packages are up to date."
       fi
 }  # End of function f_list_packages.
-#
-# +----------------------------------------+
-# |  Function f_show_package_descriptions  |
-# +----------------------------------------+
-#
-#  Inputs: GUI.
-#    Uses: None.
-# Outputs: None.
-#
-f_show_package_descriptions () {
-      #
-      case $GUI in
-           dialog | whiptail)
-           TEMP_FILE="uplist2.tmp"
-           #
-           f_message $GUI "OK" "Package Description" $TEMP_FILE
-           #
-           if [ -r $TEMP_FILE ] ; then
-              rm $TEMP_FILE
-           fi
-           #
-           clear # Blank the screen.
-           #
-           ;;
-           text)
-           TEMP_FILE="uplist2.tmp"
-           f_message $GUI "OK" "Package Description" $TEMP_FILE
-           #
-           clear # Blank the screen.
-           #
-           ;;    
-      esac
-}  # End of function f_show_package_descriptions.
 #
 # +------------------------------+
 # |       Function f_message     |
@@ -513,222 +457,341 @@ f_message () {
       #
       case $1 in
            "dialog" | "whiptail")
-           #
-           # If text strings have Dialog \Z commands for font color bold/normal, 
-           # they must be used AFTER \n (line break) commands.
-           # Example: "This is a test.\n\Z1\ZbThis is in bold-red letters.\n\ZnThis is in normal font."
-           #
-           # Is $4 a text string or a text file?
-           if [ -r "$4" ] ; then
-              # If $4 is a text file.
+              # Dialog boxes "--msgbox" "--infobox" can use option --colors with "\Z" commands for font color bold/normal.
+              # Dialog box "--textbox" and Whiptail cannot use option --colors with "\Z" commands for font color bold/normal.
+              #
+              # If text strings have Dialog "\Z" commands for font color bold/normal, 
+              # they must be used AFTER \n (line break) commands.
+              # Example: "This is a test.\n\Z1\ZbThis is in bold-red letters.\n\ZnThis is in normal font."
               #
               # Get the screen resolution or X-window size.
               # Get rows (height).
-              YY=$(stty size | awk '{ print $1 }')
+              YSCREEN=$(stty size | awk '{ print $1 }')
               # Get columns (width).
-              XX=$(stty size | awk '{ print $2 }')
+              XSCREEN=$(stty size | awk '{ print $2 }')
               #
-              # If text file, calculate number of lines and length of sentences.
-              # to calculate height and width of Dialog box.
-              #
-              # Calculate longest line length in TEMP_FILE to find maximum menu width for Dialog or Whiptail.
-              # The "Word Count" wc command output will not include the TEMP_FILE name
-              # if you redirect "<$TEMP_FILE" into wc.
-              X=$(wc --max-line-length <$4)
-              #
-              # Calculate number of lines or Menu Choices to find maximum menu lines for Dialog or Whiptail.
-              Y=$(wc --lines <$4)
-              #
-              if [ "$2" = "OK" ] ; then
-                 # If $2 is "OK" then use a Dialog/Whiptail textbox.
+              # Is $4 a text string or a text file?
+              if [ -r "$4" ] ; then
+                 # If $4 is a text file.
                  #
-                 case $1 in
-                      dialog)
-                      # Dialog needs about 6 more lines for the header and [OK] button.
-                      let Y=Y+6
-                      # If number of lines exceeds screen/window height then set textbox height.
-                      if [ $Y -ge $YY ] ; then
-                         Y=$YY
-                      fi
-                      #
-                      # Dialog needs about 10 more spaces for the right and left window frame. 
-                      let X=X+10
-                      # If line length exceeds screen/window width then set textbox width.
-                      if [ $X -ge $XX ] ; then
-                         X=$XX
-                      fi
-                      dialog --colors --title "$3" --textbox "$4" $Y $X
-                      ;;
-                      whiptail)
-                      # Whiptail does not have OPTION --colors.
-                      # Whiptail needs about 6 more lines for the header and [OK] button.
-                      let Y=Y+6
-                      # If number of lines exceeds screen/window height then set textbox height.
-                      if [ $Y -ge $YY ] ; then
-                         Y=$YY
-                      fi
-                      #
-                      # Whiptail needs about 5 more spaces for the right and left window frame. 
-                      let X=X+5
-                      # If line length exceeds screen/window width then set textbox width.
-                      if [ $X -ge $XX ] ; then
-                         X=$XX
-                      fi
-                      whiptail --scrolltext --title "$3" --textbox "$4" $Y $X
-                      ;;
-                 esac
+                 # If text file, calculate number of lines and length of sentences.
+                 # to calculate height and width of Dialog box.
+                 #
+                 # Calculate longest line length in TEMP_FILE to find maximum menu width for Dialog or Whiptail.
+                 # The "Word Count" wc command output will not include the TEMP_FILE name
+                 # if you redirect "<$TEMP_FILE" into wc.
+                 X=$(wc --max-line-length <$4)
+                 #
+                 # Calculate number of lines or Menu Choices to find maximum menu lines for Dialog or Whiptail.
+                 Y=$(wc --lines <$4)
+                 #
+                 if [ "$2" = "OK" ] ; then
+                    # $4 is a text file.
+                    #If $2 is "OK" then use a Dialog/Whiptail textbox.
+                    #
+                    case $1 in
+                         dialog)
+                            # Dialog needs about 6 more lines for the header and [OK] button.
+                            let Y=Y+6
+                            # If number of lines exceeds screen/window height then set textbox height.
+                            if [ $Y -ge $YSCREEN ] ; then
+                               Y=$YSCREEN
+                            fi
+                            #
+                            # Dialog needs about 10 more spaces for the right and left window frame. 
+                            let X=X+10
+                            # If line length exceeds screen/window width then set textbox width.
+                            if [ $X -ge $XSCREEN ] ; then
+                               X=$XSCREEN
+                            fi
+                            #
+                            # Dialog box "--textbox" and Whiptail cannot use "\Z" commands.
+                            # No --colors option for Dialog --textbox.
+                            dialog --title "$3" --textbox "$4" $Y $X
+                         ;;
+                         whiptail)
+                            # Whiptail needs about 7 more lines for the header and [OK] button.
+                            let Y=Y+7
+                            # If number of lines exceeds screen/window height then set textbox height.
+                            if [ $Y -ge $YSCREEN ] ; then
+                               Y=$YSCREEN
+                            fi
+                            #
+                            # Whiptail needs about 5 more spaces for the right and left window frame. 
+                            let X=X+5
+                            # If line length exceeds screen/window width then set textbox width.
+                            if [ $X -ge $XSCREEN ] ; then
+                               X=$XSCREEN
+                            fi
+                            #
+                            # Whiptail does not have option "--colors" with "\Z" commands for font color bold/normal.
+                            whiptail --scrolltext --title "$3" --textbox "$4" $Y $X
+                         ;;
+                    esac
+                    #
+                 else
+                    # $4 is a text file.
+                    # If $2 is "NOK" then use a Dialog infobox or Whiptail textbox.
+                    case $1 in
+                         dialog)
+                            # Dialog needs about 6 more lines for the header and [OK] button.
+                            let Y=Y+6
+                            # If number of lines exceeds screen/window height then set textbox height.
+                            if [ $Y -ge $YSCREEN ] ; then
+                               Y=$YSCREEN
+                            fi
+                            #
+                            # Dialog needs about 10 more spaces for the right and left window frame. 
+                            let X=X+10
+                            # If line length exceeds screen/window width then set textbox width.
+                            if [ $X -ge $XSCREEN ] ; then
+                               X=$XSCREEN
+                            fi
+                            #
+                            # Dialog boxes "--msgbox" "--infobox" can use option --colors with "\Z" commands for font color bold/normal.
+                            dialog --colors --title "$3" --infobox "$Z" $Y $X ; sleep 3
+                         ;;
+                         whiptail)
+                            # Whiptail only has options --textbox or --msgbox (not --infobox).
+                            # Whiptail does not have option "--colors" with "\Z" commands for font color bold/normal.
+                            #
+                            # Whiptail needs about 7 more lines for the header and [OK] button.
+                            let Y=Y+7
+                            # If number of lines exceeds screen/window height then set textbox height.
+                            if [ $Y -ge $YSCREEN ] ; then
+                               Y=$YSCREEN
+                            fi
+                            #
+                            # Whiptail needs about 5 more spaces for the right and left window frame. 
+                            let X=X+5
+                            # If line length exceeds screen/window width then set textbox width.
+                            if [ $X -ge $XSCREEN ] ; then
+                               X=$XSCREEN
+                            fi
+                            whiptail --title "$3" --textbox "$4" $Y $X
+                         ;;
+                    esac
+                 fi
+                 #
+                 if [ -r $TEMP_FILE ] ; then
+                    rm $TEMP_FILE
+                 fi
                  #
               else
-                 # If $2 is "NOK" then use a Dialog infobox or Whiptail textbox.
-                 case $1 in
-                      whiptail)
-                      # Whiptail only does a --textbox or --msgbox (not --infobox).
-                      whiptail --title "$3" --textbox "$4" $Y $X
+                 # If $4 is a text string.
+                 #
+                 # Does $4 contain "\n"?  Does the string $4 contain multiple sentences?
+                 case $4 in
+                      *\n*)
+                         # Yes, string $4 contains multiple sentences.
+                         #
+                         # Use command "sed" with "-e" to filter out multiple "\Z" commands.
+                         # Filter out "\Z[0-7]", "\Zb", \ZB", "\Zr", "\ZR", "\Zu", "\ZU", "\Zn".
+                         ZNO=$(echo $4 | sed -e 's|\\Z0||g' -e 's|\\Z1||g' -e 's|\\Z2||g' -e 's|\\Z3||g' -e 's|\\Z4||g' -e 's|\\Z5||g' -e 's|\\Z6||g' -e 's|\\Z7||g' -e 's|\\Zb||g' -e 's|\\ZB||g' -e 's|\\Zr||g' -e 's|\\ZR||g' -e 's|\\Zu||g' -e 's|\\ZU||g' -e 's|\\Zn||g')
+                         # Calculate the length of the longest sentence with the $4 string.
+                         # How many sentences?
+                         # Replace "\n" with "%" and then use awk to count how many sentences.
+                         # Save number of sentences.
+                         Y=$(echo $ZNO | sed 's|\\n|%|g'| awk -F '%' '{print NF}')
+                         #
+                         # Extract each sentence
+                         # Replace "\n" with "%" and then use awk to print current sentence.
+                         TEMP_FILE=$THIS_FILE"_temp.txt"
+                         echo -e $ZNO > $TEMP_FILE
+                         # This is the long way... echo $ZNO | sed 's|\\n|%|g'| awk -F "%" '{ for (i=1; i<NF+1; i=i+1) print $i }' >$TEMP_FILE
+                         # Calculate longest line length in TEMP_FILE to find maximum menu width for Dialog or Whiptail.
+                         # The "Word Count" wc command output will not include the TEMP_FILE name
+                         # if you redirect "<$TEMP_FILE" into wc.
+                         X=$(wc --max-line-length < $TEMP_FILE)
                       ;;
-                      dialog)
-                      #
-                      # Translate "\n" or the <crlf> to "|". Join all lines together delimited by "|".
-                      #   $ cat $4 | tr "\n" "|" 
-                      #
-                      # Substitute string "|" with string "\n"
-                      #   $ sed -i 's/|/\\n/g' 
-                      #
-                      # Join all lines together delimited by string "\n" 
-                      # to allow the output of multiple lines of text in a single string variable
-                      # using the interpretation of back-slash escapes to recreate each line <CRLF>.
-                      #   $ cat $4 | tr "\n" "|"  > $4 ; sed -i 's/|/\\n/g' $4
-                      #
-                      # A Dialog Infobox displays the message in a window without you having to an press [OK] button.
-                      TEMP_FILE=$THIS_FILE"men.sh_temp2.txt"
-                      echo $4
-                      echo
-                      cat "$4" | tr "\n" "|"  > $TEMP_FILE ; sed -i 's/|/\\n/g' $TEMP_FILE
-                      Z=$(cat $TEMP_FILE)
-                      dialog --colors --title "$3" --infobox "$Z" $Y $X ; sleep 3
+                      *)
+                         # No, line length is $4 string length. 
+                         X=$(echo -n "$4" | wc -c)
+                         Y=1
                       ;;
                  esac
+                 #
+                 if [ "$2" = "OK" ] ; then
+                    # $4 is a text string.
+                    # If $2 is "OK" then use a Dialog/Whiptail msgbox.
+                    #
+                    # Calculate line length of $4 if it contains "\n" <new line> markers.
+                    # Find length of all sentences delimited by "\n"
+                    #
+                    case $1 in
+                         dialog)
+                            # Dialog needs about 5 more lines for the header and [OK] button.
+                            let Y=Y+5
+                            # If number of lines exceeds screen/window height then set textbox height.
+                            if [ $Y -ge $YSCREEN ] ; then
+                               Y=$YSCREEN
+                            fi
+                            #
+                            # Dialog needs about 10 more spaces for the right and left window frame. 
+                            let X=X+10
+                            # If line length exceeds screen/window width then set textbox width.
+                            if [ $X -ge $XSCREEN ] ; then
+                               X=$XSCREEN
+                            fi
+                            #
+                            # Dialog boxes "--msgbox" "--infobox" can use option --colors with "\Z" commands for font color bold/normal.
+                            dialog --colors --title "$3" --msgbox "$4" $Y $X
+                         ;;
+                         whiptail)
+                            # Whiptail only has options --textbox or--msgbox (not --infobox).
+                            # Whiptail does not have option "--colors" with "\Z" commands for font color bold/normal.
+                            # Filter out any "\Z" commands when using the same string for both Dialog and Whiptail.
+                            # Use command "sed" with "-e" to filter out multiple "\Z" commands.
+                            # Filter out "\Z[0-7]", "\Zb", \ZB", "\Zr", "\ZR", "\Zu", "\ZU", "\Zn".
+                            ZNO=$(echo $4 | sed -e 's|\\Z0||g' -e 's|\\Z1||g' -e 's|\\Z2||g' -e 's|\\Z3||g' -e 's|\\Z4||g' -e 's|\\Z5||g' -e 's|\\Z6||g' -e 's|\\Z7||g' -e 's|\\Zb||g' -e 's|\\ZB||g' -e 's|\\Zr||g' -e 's|\\ZR||g' -e 's|\\Zu||g' -e 's|\\ZU||g' -e 's|\\Zn||g')
+                            #
+                            # Whiptail needs about 6 more lines for the header and [OK] button.
+                            let Y=Y+6
+                            # If number of lines exceeds screen/window height then set textbox height.
+                            if [ $Y -ge $YSCREEN ] ; then
+                               Y=$YSCREEN
+                            fi
+                            #
+                            # Whiptail needs about 5 more spaces for the right and left window frame. 
+                            let X=X+5
+                            # If line length exceeds screen/window width then set textbox width.
+                            if [ $X -ge $XSCREEN ] ; then
+                               X=$XSCREEN
+                            fi
+                            #
+                            whiptail --title "$3" --msgbox "$ZNO" $Y $X
+                         ;;
+                    esac
+                 else
+                    # $4 is a text string.
+                    # If $2 in "NOK" then use a Dialog infobox or Whiptail msgbox.
+                    #
+                    case $1 in
+                         dialog)
+                            # Dialog boxes "--msgbox" "--infobox" can use option --colors with "\Z" commands for font color bold/normal.
+                            # Dialog needs about 5 more lines for the header and [OK] button.
+                            let Y=Y+5
+                            # If number of lines exceeds screen/window height then set textbox height.
+                            if [ $Y -ge $YSCREEN ] ; then
+                               Y=$YSCREEN
+                            fi
+                            #
+                            # Dialog needs about 10 more spaces for the right and left window frame. 
+                            let X=X+6
+                            # If line length exceeds screen/window width then set textbox width.
+                            if [ $X -ge $XSCREEN ] ; then
+                               X=$XSCREEN
+                            fi
+                            #
+                            dialog --colors --title "$3" --infobox "$4" $Y $X ; sleep 3
+                         ;;
+                         whiptail)
+                            # Whiptail only has options --textbox or--msgbox (not --infobox).
+                            # Whiptail does not have option "--colors" with "\Z" commands for font color bold/normal.
+                            # Filter out any "\Z" commands when using the same string for both Dialog and Whiptail.
+                            # Use command "sed" with "-e" to filter out multiple "\Z" commands.
+                            # Filter out "\Z[0-7]", "\Zb", \ZB", "\Zr", "\ZR", "\Zu", "\ZU", "\Zn".
+                            ZNO=$(echo $4 | sed -e 's|\\Z0||g' -e 's|\\Z1||g' -e 's|\\Z2||g' -e 's|\\Z3||g' -e 's|\\Z4||g' -e 's|\\Z5||g' -e 's|\\Z6||g' -e 's|\\Z7||g' -e 's|\\Zb||g' -e 's|\\ZB||g' -e 's|\\Zr||g' -e 's|\\ZR||g' -e 's|\\Zu||g' -e 's|\\ZU||g' -e 's|\\Zn||g')
+                            #
+                            # Whiptail needs about 6 more lines for the header and [OK] button.
+                            let Y=Y+6
+                            # If number of lines exceeds screen/window height then set textbox height.
+                            if [ $Y -ge $YSCREEN ] ; then
+                               Y=$YSCREEN
+                            fi
+                            #
+                            # Whiptail needs about 5 more spaces for the right and left window frame. 
+                            let X=X+5
+                            # If line length exceeds screen/window width then set textbox width.
+                            if [ $X -ge $XSCREEN ] ; then
+                               X=$XSCREEN
+                            fi
+                            #
+                            whiptail --title "$3" --msgbox "$ZNO" $Y $X
+                         ;;
+                     esac
+                  fi
               fi
-              #
-              if [ -r $TEMP_FILE ] ; then
-                 rm $TEMP_FILE
-              fi
-              #
-           else
-              # If $4 is a text string.
-              #
-              if [ "$2" = "OK" ] ; then
-                 # If $2 is "OK" then use a Dialog msgbox.
-                 #
-                 X=$(echo -n "$4" | wc -c)
-                 let X=X+10
-                 Y=7
-                 #
-                 case $1 in
-                      whiptail)
-                      # Whiptail only does a --textbox or--msgbox (not --infobox).
-                      whiptail --title "$3" --msgbox "$4" $Y $X
-                      ;;
-                      dialog)
-                      dialog --colors --title "$3" --msgbox "$4" $Y $X
-                      ;;
-                 esac
-              else
-                 # If $2 is "NOK" then use a Dialog infobox.
-                 #
-                 X=$(echo -n "$4" | wc -c)
-                 let X=X+10
-                 Y=7
-                 #
-                 case $1 in
-                      whiptail)
-                      # Whiptail only does a --textbox or--msgbox (not --infobox).
-                      whiptail --title "$3" --msgbox "$4" $Y $X
-                      ;;
-                      dialog)
-                      dialog --colors --title "$3" --infobox "$4" $Y $X ; sleep 3
-                      ;;
-                  esac
-               fi
-           fi
-           ;;
+              ;;
            *)
-           # Is $4 a text string or a text file?
-           #
-           if [ -r "$4" ] ; then
-              # If $4 is a text file.
+              # Text only
+              #Is $4 a text string or a text file?
               #
-              if [ "$2" = "OK" ] ; then
-                 # If $2 is "OK" then use command "less".
+              if [ -r "$4" ] ; then
+                 # If $4 is a text file.
                  #
-                 clear  # Blank the screen.
+                 if [ "$2" = "OK" ] ; then
+                    # If $2 is "OK" then use command "less".
+                    #
+                    clear  # Blank the screen.
+                    #
+                    # Display text file contents.
+                    less -P '%P\% (Spacebar, PgUp/PgDn, Up/Dn arrows, press q to quit)' $4
+                    #
+                    clear  # Blank the screen.
+                    #
+                 else
+                    # If $2 is "NOK" then use "cat" and "sleep" commands to give time to read it.
+                    #
+                    clear  # Blank the screen.
+                    # Display title.
+                    echo
+                    echo $3
+                    echo
+                    echo
+                    # Display text file contents.
+                    cat $4
+                    sleep 5
+                    #
+                    clear  # Blank the screen.
+                    #
+                 fi
                  #
-                 # Display text file contents.
-                 less -P '%P\% (Spacebar, PgUp/PgDn, Up/Dn arrows, press q to quit)' $4
-                 #
-                 clear  # Blank the screen.
+                 if [ -r $TEMP_FILE ] ; then
+                    rm $TEMP_FILE
+                 fi
                  #
               else
-                 # If $2 is "NOK" then use "cat" and "sleep" commands to give time to read it.
+                 # If $4 is a text string.
                  #
-                 clear  # Blank the screen.
-                 # Display title.
-                 echo
-                 echo $3
-                 echo
-                 echo
-                 # Display text file contents.
-                 cat $4
-                 sleep 5
-                 #
-                 clear  # Blank the screen.
-                 #
+                 if [ "$2" = "OK" ] ; then
+                    # If $2 is "OK" then use f_press_enter_key_to_continue.
+                    #
+                    clear  # Blank the screen.
+                    #
+                    # Display title.
+                    echo
+                    echo -e $3
+                    echo
+                    echo
+                    # Display text file contents.
+                    echo -e $4
+                    echo
+                    f_press_enter_key_to_continue
+                    #
+                    clear  # Blank the screen.
+                    #
+                 else
+                    # If $2 is "NOK" then use "echo" followed by "sleep" commands
+                    # to give time to read it.
+                    #
+                    clear  # Blank the screen.
+                    #
+                    # Display title.
+                    echo
+                    echo -e $3
+                    echo
+                    echo
+                    # Display text file contents.
+                    echo -e $4
+                    echo
+                    echo
+                    sleep 5
+                    #
+                    clear  # Blank the screen.
+                    #
+                 fi
               fi
-              #
-              if [ -r $TEMP_FILE ] ; then
-                 rm $TEMP_FILE
-              fi
-              #
-           else
-              # If $4 is a text string.
-              #
-              if [ "$2" = "OK" ] ; then
-                 # If $2 is "OK" then use f_press_enter_key_to_continue.
-                 #
-                 clear  # Blank the screen.
-                 #
-                 # Display title.
-                 echo
-                 echo -e $3
-                 echo
-                 echo
-                 # Display text file contents.
-                 echo -e $4
-                 echo
-                 f_press_enter_key_to_continue
-                 #
-                 clear  # Blank the screen.
-                 #
-              else
-                 # If $2 is "NOK" then use "echo" followed by "sleep" commands
-                 # to give time to read it.
-                 #
-                 clear  # Blank the screen.
-                 #
-                 # Display title.
-                 echo
-                 echo -e $3
-                 echo
-                 echo
-                 # Display text file contents.
-                 echo -e $4
-                 echo
-                 echo
-                 sleep 5
-                 #
-                 clear  # Blank the screen.
-                 #
-              fi
-           fi
            ;;
       esac
 } # End of function f_message.
@@ -737,181 +800,39 @@ f_message () {
 # |          Function f_about          |
 # +------------------------------------+
 #
-#  Inputs: $1=GUI (May or may not exist).
+#  Inputs: $1=GUI - "text", "dialog" or "whiptail" the preferred user-interface.
 #          THIS_FILE, VERSION.
 #    Uses: None.
 # Outputs: None.
 #
 f_about () {
-      case $GUI in
-           "dialog" | "whiptail") 
-           f_about_gui $GUI
-           ;;
-           *)
-           f_about_txt
-           ;;
-      esac
+      #
+      TEMP_FILE=$THIS_FILE"_temp.txt"
+      echo "Script: $THIS_FILE. Version: $VERSION" >$TEMP_FILE
+      echo >>$TEMP_FILE
+      #
+      # Display text (all lines beginning with "#@" but do not print "#@").
+      # sed substitutes null for "#@" at the beginning of each line
+      # so it is not printed.
+      sed -n 's/^#@//'p $THIS_DIR/$THIS_FILE >> $TEMP_FILE
+      #
+      f_message $1 "OK" "About (use arrow keys to scroll up/down/side-ways)" $TEMP_FILE
+      #
 } # End of f_about.
-#
-# +------------------------------------+
-# |        Function f_about_txt        |
-# +------------------------------------+
-#
-#  Inputs: None.
-#          THIS_FILE, VERSION.
-#    Uses: None.
-# Outputs: None.
-#
-f_about_txt () {
-      #
-      THIS_FILE="pkg-upgrade.sh"
-      TEMP_FILE=$THIS_FILE"_temp.txt"
-      #
-      clear # Blank the screen.
-      echo
-      echo "Script: $THIS_FILE. Version: $VERSION" >$TEMP_FILE
-      echo >>$TEMP_FILE
-      #
-      # Display text (all lines beginning with "#@" but do not print "#@").
-      # sed reads each line of this file and substitutes null for "#@"
-      # at the beginning of each line so it is not printed.
-      sed -n 's/^#@//'p $THIS_DIR/$THIS_FILE >> $TEMP_FILE
-      #
-      # less -P customizes prompt for
-      # %f <FILENAME> page <num> of <pages> (Spacebar, PgUp/PgDn . . .)
-      #less -P '(Spacebar, PgUp/PgDn, Up/Dn arrows, press q to quit)' $TEMP_FILE
-      #
-      # Alternate display using <Enter> instead of <q> to continue.
-      cat $TEMP_FILE
-      f_press_enter_key_to_continue
-      #
-      if [ -r $TEMP_FILE ] ; then
-         rm $TEMP_FILE
-      fi
-      #
-      clear # Blank the screen.
-      #
-} # End of f_about_txt.
-#
-# +------------------------------------+
-# |        Function f_about_gui        |
-# +------------------------------------+
-#
-#  Inputs: $1=GUI - "dialog" or "whiptail" The CLI GUI application in use.
-#          THIS_FILE, VERSION.
-#    Uses: None.
-# Outputs: None.
-#
-f_about_gui () {
-      #
-      # The variable $THIS_FILE is set to a library file when
-      # menu is generated so it needs to be reset to "menu.sh".
-      THIS_FILE="pkg-upgrade.sh"
-      TEMP_FILE=$THIS_FILE"_temp.txt"
-      #
-      echo "Script: $THIS_FILE. Version: $VERSION" >$TEMP_FILE
-      echo >>$TEMP_FILE
-      #
-      # Display text (all lines beginning with "#@" but do not print "#@").
-      # sed reads each line of this file and substitutes null for "#@"
-      # at the beginning of each line so it is not printed.
-      sed -n 's/^#@//'p $THIS_DIR/$THIS_FILE >> $TEMP_FILE
-      #
-      # Calculate longest line length in TEMP_FILE to find maximum menu width for Dialog or Whiptail.
-      # The "Word Count" wc command output will not include the TEMP_FILE name
-      # if you redirect "<$TEMP_FILE" into wc.
-      X=$(wc --max-line-length <$TEMP_FILE)
-      let X=X+6
-      #
-      # Calculate number of lines or Menu Choices to find maximum menu lines for Dialog or Whiptail.
-      Y=$(wc --lines <$TEMP_FILE)
-      let Y=Y+6
-      #
-      $1 --title "About $THIS_FILE (use arrow keys to scroll up/down/side-ways)" --textbox $TEMP_FILE $Y $X
-      #
-      if [ -r $TEMP_FILE ] ; then
-         rm $TEMP_FILE
-      fi
-      #
-      clear # Blank the screen.
-      #
-} # End of f_about_gui.
 #
 # +------------------------------------+
 # |      Function f_code_history       |
 # +------------------------------------+
 #
-#  Inputs: $1=GUI (May or may not exist).
+#  Inputs: $1=GUI - "text", "dialog" or "whiptail" the preferred user-interface.
 #          THIS_FILE, VERSION.
 #    Uses: None.
 # Outputs: None.
 #
 f_code_history () {
       #
-      case $GUI in
-           "dialog" | "whiptail") 
-           f_code_history_gui $GUI
-           ;;
-           *)
-           f_code_history_txt
-           ;;
-       esac
-} # End of f_code_history.
-#
-# +----------------------------------------+
-# |       Function f_code_history_txt      |
-# +----------------------------------------+
-#
-#  Inputs: THIS_DIR, THIS_FILE.
-#    Uses: None.
-# Outputs: None.
-#
-f_code_history_txt () {
-      #
-      # The variable $THIS_FILE is set to a library file when
-      # menu is generated so it needs to be reset to "menu.sh".
-      THIS_FILE="pkg-upgrade.sh"
       TEMP_FILE=$THIS_FILE"_temp.txt"
-      #
-      clear # Blank the screen.
-      echo
-      #
-      echo "Script: $THIS_FILE. Version: $VERSION" >$TEMP_FILE
-      echo >>$TEMP_FILE
-      #
-      # Display text (all lines beginning with "##" but do not print "##").
-      # sed reads each line of this file and substitutes null for "##"
-      # at the beginning of each line so it is not printed.
-      sed -n 's/^##//'p $THIS_DIR/$THIS_FILE >> $TEMP_FILE
-      #
-      # less -P customizes prompt for
-      # %f <FILENAME> page <num> of <pages> (Spacebar, PgUp/PgDn . . .)
-      less -P '(Spacebar, PgUp/PgDn, Up/Dn arrows, press q to quit)' $TEMP_FILE
-      #
-      if [ -r $TEMP_FILE ] ; then
-         rm $TEMP_FILE
-      fi
-      #
-      clear # Blank the screen.
-      #
-} # End of function f_code_history_txt.
-#
-# +----------------------------------------+
-# |       Function f_code_history_gui      |
-# +----------------------------------------+
-#
-#  Inputs: $1=GUI - "dialog" or "whiptail" The CLI GUI application in use.
-#          THIS_DIR, THIS_FILE.
-#    Uses: None.
-# Outputs: temp.txt.
-#
-f_code_history_gui () {
-      #
-      # The variable $THIS_FILE is set to a library file when
-      # menu is generated so it needs to be reset to "menu.sh".
-      THIS_FILE="pkg-upgrade.sh"
-      TEMP_FILE=$THIS_FILE"_temp.txt"
-      #
+      f_script_path
       echo "Script: $THIS_FILE. Version: $VERSION" >$TEMP_FILE
       echo >>$TEMP_FILE
       #
@@ -920,129 +841,32 @@ f_code_history_gui () {
       # so it is not printed.
       sed -n 's/^##//'p $THIS_DIR/$THIS_FILE >>$TEMP_FILE
       #
-      # Calculate longest line length in TEMP_FILE to find maximum menu width for Dialog or Whiptail.
-      # The "Word Count" wc command output will not include the TEMP_FILE name
-      # if you redirect "<$TEMP_FILE" into wc.
-      X=$(wc --max-line-length <$TEMP_FILE)
-      let X=X+10
+      f_message $1 "OK" "Code History (use arrow keys to scroll up/down/side-ways)" $TEMP_FILE
       #
-      # Calculate number of lines or Menu Choices to find maximum menu lines for Dialog or Whiptail.
-      Y=$(wc --lines <$TEMP_FILE)
-      let Y=Y+6
-      #
-      $1 --title "Code History (use arrow keys to scroll up/down/side-ways)" --textbox $TEMP_FILE $Y $X
-      #
-      if [ -r $TEMP_FILE ] ; then
-         rm $TEMP_FILE
-      fi
-      #
-      clear # Blank the screen.
-      #
-} # End of function f_code_history_gui.
+} # End of function f_code_history.
 #
 # +------------------------------------+
 # |      Function f_help_message       |
 # +------------------------------------+
 #
-#  Inputs: $1=GUI (May or may not exist).
+#  Inputs: $1=GUI - "text", "dialog" or "whiptail" the preferred user-interface.
 #    Uses: None.
 # Outputs: None.
 #
 f_help_message () {
       #
-      case $GUI in
-           "dialog" | "whiptail") 
-           f_help_message_gui $GUI
-           ;;
-           *)
-           f_help_message_txt
-           ;;
-      esac
-} # End of f_help_message.
-#
-# +----------------------------------------+
-# |     Function f_help_message_txt        |
-# +----------------------------------------+
-#
-#  Inputs: None.
-#    Uses: None.
-# Outputs: None.
-#
-f_help_message_txt () {
+      # Display text (all lines beginning with "#?" but do not print "#?").
+      # sed substitutes null for "#?" at the beginning of each line
+      # so it is not printed.
       #
-      # The variable $THIS_FILE is set to a library file when
-      # menu is generated so it needs to be reset to "menu.sh".
-      THIS_FILE="pkg-upgrade.sh"
       TEMP_FILE=$THIS_FILE"_temp.txt"
-      #
-      clear # Blank the screen.
-      echo
-      #
       echo "Script: $THIS_FILE. Version: $VERSION" >$TEMP_FILE
       echo >>$TEMP_FILE
-      #
-      # Display text (all lines beginning with "#?" but do not print "#?").
-      # sed reads each line of this file and substitutes null for "#?"
-      # at the beginning of each line so it is not printed.
       sed -n 's/^#?//'p $THIS_DIR/$THIS_FILE >> $TEMP_FILE
       #
-      # less -P customizes prompt for
-      # %f <FILENAME> page <num> of <pages> (Spacebar, PgUp/PgDn . . .)
-      #less -P '(Spacebar, PgUp/PgDn, Up/Dn arrows, press q to quit)' $TEMP_FILE
+      f_message $1 "OK" "Usage (use arrow keys to scroll up/down/side-ways)" $TEMP_FILE
       #
-      # Alternate display using <Enter> instead of <q> to continue.
-      cat $TEMP_FILE
-      f_press_enter_key_to_continue
-      #
-      if [ -r $TEMP_FILE ] ; then
-         rm $TEMP_FILE
-      fi
-      #
-      clear # Blank the screen.
-      #
-} # End of function f_help_message_txt.
-#
-# +----------------------------------------+
-# |     Function f_help_message_gui        |
-# +----------------------------------------+
-#
-#  Inputs: $1=GUI - "dialog" or "whiptail" the preferred user-interface.
-#    Uses: None.
-# Outputs: None.
-#
-f_help_message_gui () {
-      #
-      # The variable $THIS_FILE is set to a library file when
-      # menu is generated so it needs to be reset to "menu.sh".
-      THIS_FILE="pkg-upgrade.sh"
-      TEMP_FILE=$THIS_FILE"_temp.txt"
-      #
-      echo "Script: $THIS_FILE. Version: $VERSION" >$TEMP_FILE
-      echo >>$TEMP_FILE
-      #
-      # Display text (all lines beginning with "#@" but do not print "#@").
-      # sed substitutes null for "#@" at the beginning of each line
-      # so it is not printed.
-      sed -n 's/^#?//'p $THIS_DIR/$THIS_FILE >>$TEMP_FILE
-      #
-      # Calculate longest line length in TEMP_FILE to find maximum menu width for Dialog or Whiptail.
-      # The "Word Count" wc command output will not include the TEMP_FILE name
-      # if you redirect "<$TEMP_FILE" into wc.
-      X=$(wc --max-line-length <$TEMP_FILE)
-      let X=X+10
-      #
-      # Calculate number of lines or Menu Choices to find maximum menu lines for Dialog or Whiptail.
-      Y=$(wc --lines <$TEMP_FILE)
-      let Y=Y+6
-      #
-      $1 --title "Help Message (use arrow keys to scroll up/down/side-ways)" --textbox $TEMP_FILE $Y $X
-      if [ -r $TEMP_FILE ] ; then
-         rm $TEMP_FILE
-      fi
-      #
-      clear # Blank the screen.
-      #
-} # End of f_help_message_gui.
+} # End of f_help_message.
 #
 # **************************************
 # ***     Start of Main Program      ***
@@ -1050,12 +874,12 @@ f_help_message_gui () {
 #
 clear  # Clear screen.
 #
-TEMP_FILE="uplist.tmp"
+TEMP_FILE="$THIS_FILE_temp_file.txt"
 if [ -e $TEMP_FILE ] ; then
    rm $TEMP_FILE
 fi
 ##
-TEMP_FILE="uplist2.tmp"
+TEMP_FILE="$THIS_FILE_temp_file2.txt"
 if [ -e $TEMP_FILE ] ; then
    rm $TEMP_FILE
 fi
@@ -1103,12 +927,14 @@ else
    f_bad_sudo_password $GUI
 fi
 #
-if [ -r uplist.tmp ] ; then
-   rm uplist.tmp
+TEMP_FILE="$THIS_FILE_temp_file.txt"
+if [ -r $TEMP_FILE ] ; then
+   rm $TEMP_FILE
 fi
 #
-if [ -r uplist2.tmp ] ; then
-   rm uplist2.tmp
+TEMP_FILE2="$THIS_FILE_temp_file2.txt"
+if [ -r $TEMP_FILE ] ; then
+   rm $TEMP_FILE
 fi
 # All dun dun noodles.
 
