@@ -9,7 +9,7 @@
 # |        Default Variable Values         |
 # +----------------------------------------+
 #
-VERSION="2020-04-11 15:01"
+VERSION="2020-04-11 19:39"
 THIS_FILE="pkg-upgrade.sh"
 #
 # +----------------------------------------+
@@ -18,8 +18,8 @@ THIS_FILE="pkg-upgrade.sh"
 #
 #@ Brief Description
 #@
-#@ Script pkg-upgrade.sh will show a description of each upgradable package before
-#@ upgrading each package.
+#@ Script pkg-upgrade.sh will show a description of each upgradable package
+#@ before upgrading each package.
 #@
 #@ Required scripts: None
 #@
@@ -355,7 +355,7 @@ f_arguments () {
 #  Inputs: $1=GUI.
 #          THIS_FILE, VERSION.
 #    Uses: None.
-# Outputs: None.
+# Outputs: File uplist.tmp.
 #
 f_ques_upgrade () {
       #
@@ -363,13 +363,9 @@ f_ques_upgrade () {
       X=$(tail -n 1 uplist.tmp)
       if [ "$X" = "All packages are up to date." ] ; then
          f_message $1 "NOK" "Status of Software Packages" "All packages are at the latest version."
-         #
-         clear # Blank the screen.
-         #
       else
          # Yes/No Question.
-         f_yn_question $1 "Y" "View Package Descriptions?" "\nSome packages are not up-to-date and need upgrading.\n\nNote: There may be a delay to display descriptions.\n      (especially if many packages need to be updated)\n\nDo you want to view package descriptions?"
-
+         f_yn_question $1 "Y" "View Package Descriptions?" " \nSome packages are not up-to-date and need upgrading.\n \nNote: There may be a delay to display descriptions.\n      (especially if many packages need to be updated)\n \nDo you want to view package descriptions?"
          # ANS=0 when <Yes> button pressed.
          # ANS=1 when <No> button pressed.
          #
@@ -379,9 +375,9 @@ f_ques_upgrade () {
          fi
          f_message $1 "NOK" "Upgrade Packages" "Running command: \"sudo apt upgrade\" to upgrade packages."
          #
-         clear # Blank the screen.
+         clear  # Blank the screen.
          #
-         sudo apt upgrade
+         sudo apt upgrade #2>/dev/null
       fi
 }  # End of function f_ques_upgrade_gui.
 #
@@ -398,12 +394,12 @@ f_list_packages () {
       # File TEMP_FILE="$THIS_FILE_temp_file.txt" contains only the package names of upgradable packages.
       # File TEMP_FILE2="$THIS_FILE_temp_file2.txt is a scratch file to support the creation of uplist.tmp.
       #
-      TEMP_FILE="$THIS_FILE_temp_file.txt"
+      TEMP_FILE=$THIS_FILE"_temp.txt"
       # Raw data output from command, "apt list".
-      sudo apt list --upgradable > $TEMP_FILE
+      sudo apt list --upgradable > $TEMP_FILE 2>/dev/null
       #
       # Parse raw data to show each package title only.
-      TEMP_FILE2="$THIS_FILE_temp_file2.txt"
+      TEMP_FILE2=$THIS_FILE"_temp2.txt"
       awk -F / '{ print $1 }' $TEMP_FILE > $TEMP_FILE2
       #
       # Delete string "Listing...Done" from list of packages.
@@ -432,7 +428,7 @@ f_list_packages () {
                apt-cache show $XSTR | grep Description --max-count=1 --after-context=99 | grep Description-md5 --max-count=1 --before-context=99 | sed 's/^Description-md5.*$//'>> $TEMP_FILE2
          done < $TEMP_FILE
          #
-         f_message $GUI "OK" "Package Description" $TEMP_FILE
+         f_message $GUI "OK" "Package Description" $TEMP_FILE2
          #
       else
          f_message $GUI "NOK" "Up-to-Date" "No packages to update. All packages are up to date."
@@ -796,6 +792,183 @@ f_message () {
       esac
 } # End of function f_message.
 #
+# +----------------------------------------+
+# |          Function f_yn_question        |
+# +----------------------------------------+
+#
+#  Inputs: $1=GUI - "text", "dialog" or "whiptail" the preferred user-interface.
+#          $2 - "Y" or "N" - the default answer.         
+#          $3 - Title string (may be null).
+#          $4 - Question text string.
+#    Uses: None.
+# Outputs: ANS=0 is "Yes".
+#          ANS=1 is "No".
+#          ANS=255 if <Esc> is pressed in dialog/whiptail --yesno box.
+#
+f_yn_question () {
+      #
+      # Ask Yes/No question.
+      #
+      case $1 in
+           dialog | whiptail)
+              # If $4 is a text string.
+              #
+              # Does $4 contain "\n"?  Does the string $4 contain multiple sentences?
+              case $4 in
+                 *\n*)
+                    # Yes, string $4 contains multiple sentences.
+                    #
+                    # Use command "sed" with "-e" to filter out multiple "\Z" commands.
+                    # Filter out "\Z[0-7]", "\Zb", \ZB", "\Zr", "\ZR", "\Zu", "\ZU", "\Zn".
+                    ZNO=$(echo $4 | sed -e 's|\\Z0||g' -e 's|\\Z1||g' -e 's|\\Z2||g' -e 's|\\Z3||g' -e 's|\\Z4||g' -e 's|\\Z5||g' -e 's|\\Z6||g' -e 's|\\Z7||g' -e 's|\\Zb||g' -e 's|\\ZB||g' -e 's|\\Zr||g' -e 's|\\ZR||g' -e 's|\\Zu||g' -e 's|\\ZU||g' -e 's|\\Zn||g')
+                    # Calculate the length of the longest sentence with the $4 string.
+                    # How many sentences?
+                    # Replace "\n" with "%" and then use awk to count how many sentences.
+                    # Save number of sentences.
+                    Y=$(echo $ZNO | sed 's|\\n|%|g'| awk -F '%' '{print NF}')
+                    TEMP_FILE=$THIS_FILE"_temp.txt"
+                    echo -e $ZNO > $TEMP_FILE
+                    X=$(wc --max-line-length < $TEMP_FILE)
+                 ;;
+                 *)
+                    # No, line length is $4 string length. 
+                    X=$(echo -n "$4" | wc -c)
+                    Y=1
+                    ;;
+              esac
+                 #
+                 # Calculate line length of $4 if it contains "\n" <new line> markers.
+                 # Find length of all sentences delimited by "\n"
+                 #
+      esac
+      #
+      case $1 in
+           dialog)
+              # Dialog needs about 5 more lines for the header and [OK] button.
+              let Y=Y+5
+              # If number of lines exceeds screen/window height then set textbox height.
+              if [ $Y -ge $YSCREEN ] ; then
+                 Y=$YSCREEN
+              fi
+              #
+              # Dialog needs about 10 more spaces for the right and left window frame. 
+              let X=X+10
+              # If line length exceeds screen/window width then set textbox width.
+              if [ $X -ge $XSCREEN ] ; then
+                 X=$XSCREEN
+              fi
+           ;;
+           whiptail)
+              # Whiptail only has options --textbox or--msgbox (not --infobox).
+              # Whiptail does not have option "--colors" with "\Z" commands for font color bold/normal.
+              # Filter out any "\Z" commands when using the same string for both Dialog and Whiptail.
+              # Use command "sed" with "-e" to filter out multiple "\Z" commands.
+              # Filter out "\Z[0-7]", "\Zb", \ZB", "\Zr", "\ZR", "\Zu", "\ZU", "\Zn".
+              ZNO=$(echo $4 | sed -e 's|\\Z0||g' -e 's|\\Z1||g' -e 's|\\Z2||g' -e 's|\\Z3||g' -e 's|\\Z4||g' -e 's|\\Z5||g' -e 's|\\Z6||g' -e 's|\\Z7||g' -e 's|\\Zb||g' -e 's|\\ZB||g' -e 's|\\Zr||g' -e 's|\\ZR||g' -e 's|\\Zu||g' -e 's|\\ZU||g' -e 's|\\Zn||g')
+              #
+              # Whiptail needs about 6 more lines for the header and [OK] button.
+              let Y=Y+6
+              # If number of lines exceeds screen/window height then set textbox height.
+              if [ $Y -ge $YSCREEN ] ; then
+                 Y=$YSCREEN
+              fi
+              #
+              # Whiptail needs about 6 more spaces for the right and left window frame. 
+              let X=X+6
+              # If line length exceeds screen/window width then set textbox width.
+              if [ $X -ge $XSCREEN ] ; then
+                 X=$XSCREEN
+              fi
+           ;;
+      esac
+      #
+      case $1 in
+           dialog | whiptail)
+           case $2 in
+                Y)
+                   # "Yes" is the default answer.
+                   $1 --title "$3" --yesno "$4" $Y $X
+                   ANS=$?
+                ;;
+                N)
+                   # "No" is the default answer.
+                   $1 --title "$3" --defaultno --yesno "$4" $Y $X
+                   ANS=$?
+                ;;
+           esac
+           ;;
+           text)
+              #
+              clear  # Blank screen.
+              #
+              # Does $4 contain "\n"?  Does the string $4 contain multiple sentences?
+              case $4 in
+                   *\n*)
+                      # Yes, string $4 contains multiple sentences.
+                      #
+                      # Use command "sed" with "-e" to filter out multiple "\Z" commands.
+                      # Filter out "\Z[0-7]", "\Zb", \ZB", "\Zr", "\ZR", "\Zu", "\ZU", "\Zn".
+                      ZNO=$(echo $4 | sed -e 's|\\Z0||g' -e 's|\\Z1||g' -e 's|\\Z2||g' -e 's|\\Z3||g' -e 's|\\Z4||g' -e 's|\\Z5||g' -e 's|\\Z6||g' -e 's|\\Z7||g' -e 's|\\Zb||g' -e 's|\\ZB||g' -e 's|\\Zr||g' -e 's|\\ZR||g' -e 's|\\Zu||g' -e 's|\\ZU||g' -e 's|\\Zn||g')
+                      #
+                      # Create a text file from the string.
+                      TEMP_FILE=$THIS_FILE"_temp.txt"
+                      echo -e $ZNO > $TEMP_FILE
+                   ;;
+                   *)
+                      # No, string $4 contains a single sentence. 
+                      #
+                      # Create a text file from the string.
+                      TEMP_FILE=$THIS_FILE"_temp.txt"
+                      echo $4 > $TEMP_FILE
+                   ;;
+              esac
+              #
+              # Calculate number of lines or Menu Choices to find maximum menu lines for Dialog or Whiptail.
+              Y=$(wc --lines < $TEMP_FILE)
+              #
+              # Display Title and Question.
+              echo $3
+              echo
+              NSEN=1
+              while read XSTR
+                    do
+                       if [ $NSEN -lt $Y ] ; then
+                          echo $XSTR
+                       fi
+                       let NSEN=NSEN+1
+                    done < pkg-upgrade.sh_temp.txt
+              XSTR=$(tail -n 1 $TEMP_FILE)
+              #
+              case $2 in
+                   Y)
+                      # "Yes" is the default answer.
+                      echo -n "$XSTR (Y/n) "; read ANS
+                      #
+                      case $ANS in
+                           [Nn] | [Nn][Oo])
+                              ANS=1  # No.
+                           ;;
+                           *)
+                              ANS=0  # Yes (Default).
+                           ;;
+                      esac
+                   ;;
+                   N)
+                      # "No" is the default answer.
+                      echo -n "$XSTR (y/N) "; read ANS
+                      case $ANS in
+                           [Yy] | [Yy][Ee] | [Yy][Ee][Ss])
+                              ANS=0  # Yes.
+                           ;;
+                           *)
+                              ANS=1  # No (Default).
+                           ;;
+                      esac
+              esac        
+      esac
+      #
+} # End of function f_yn_question
+#
 # +------------------------------------+
 # |          Function f_about          |
 # +------------------------------------+
@@ -917,7 +1090,10 @@ ERROR=$?
 if [ $ERROR -eq 0 ] ; then
    #
    # Find latest updates to packages.
-   sudo apt update | tee -a uplist.tmp
+   f_message $GUI "NOK" "Searching for Updates" "Finding latest updates to packages."
+   #
+   #sudo apt update | tee -a uplist.tmp
+   sudo apt update > uplist.tmp 2>/dev/null
    #
    # If updates exist, do you want to see package descriptions?
    # And do you want to upgrade the packages?
@@ -937,5 +1113,3 @@ if [ -r $TEMP_FILE ] ; then
    rm $TEMP_FILE
 fi
 # All dun dun noodles.
-
-
