@@ -9,7 +9,7 @@
 # |        Default Variable Values         |
 # +----------------------------------------+
 #
-VERSION="2020-04-11 19:39"
+VERSION="2020-04-11 20:26"
 THIS_FILE="pkg-upgrade.sh"
 #
 # +----------------------------------------+
@@ -355,12 +355,12 @@ f_arguments () {
 #  Inputs: $1=GUI.
 #          THIS_FILE, VERSION.
 #    Uses: None.
-# Outputs: File uplist.tmp.
+# Outputs: File $TEMP_FILE.
 #
 f_ques_upgrade () {
       #
-      # Read the last line in the file uplist.tmp.
-      X=$(tail -n 1 uplist.tmp)
+      # Read the last line in the file $TEMP_FILE.
+      X=$(tail -n 1 $TEMP_FILE)
       if [ "$X" = "All packages are up to date." ] ; then
          f_message $1 "NOK" "Status of Software Packages" "All packages are at the latest version."
       else
@@ -377,6 +377,19 @@ f_ques_upgrade () {
          #
          clear  # Blank the screen.
          #
+         # Clean up temporary files before running "sudo apt upgrade".
+         # If you quit out of "sudo apt upgrade", then execution terminates
+         # within this function and never goes back to Main.
+         TEMP_FILE=$THIS_FILE"_temp.txt"
+         if [ -e $TEMP_FILE ] ; then
+            rm $TEMP_FILE
+         fi
+         #
+         TEMP_FILE=$THIS_FILE"_temp2".txt
+         if [ -e $TEMP_FILE ] ; then
+            rm $TEMP_FILE
+         fi
+         #
          sudo apt upgrade #2>/dev/null
       fi
 }  # End of function f_ques_upgrade_gui.
@@ -391,8 +404,8 @@ f_ques_upgrade () {
 #
 f_list_packages () {
       #
-      # File TEMP_FILE="$THIS_FILE_temp_file.txt" contains only the package names of upgradable packages.
-      # File TEMP_FILE2="$THIS_FILE_temp_file2.txt is a scratch file to support the creation of uplist.tmp.
+      # File TEMP_FILE="$THIS_FILE_temp.txt" contains only the package names of upgradable packages.
+      # File TEMP_FILE2="$THIS_FILE_temp2.txt contains the package names and descriptions.
       #
       TEMP_FILE=$THIS_FILE"_temp.txt"
       # Raw data output from command, "apt list".
@@ -569,7 +582,7 @@ f_message () {
                     esac
                  fi
                  #
-                 if [ -r $TEMP_FILE ] ; then
+                 if [ -e $TEMP_FILE ] ; then
                     rm $TEMP_FILE
                  fi
                  #
@@ -743,7 +756,7 @@ f_message () {
                     #
                  fi
                  #
-                 if [ -r $TEMP_FILE ] ; then
+                 if [ -e $TEMP_FILE ] ; then
                     rm $TEMP_FILE
                  fi
                  #
@@ -1047,12 +1060,12 @@ f_help_message () {
 #
 clear  # Clear screen.
 #
-TEMP_FILE="$THIS_FILE_temp_file.txt"
+TEMP_FILE=$THIS_FILE"_temp.txt"
 if [ -e $TEMP_FILE ] ; then
    rm $TEMP_FILE
 fi
 ##
-TEMP_FILE="$THIS_FILE_temp_file2.txt"
+TEMP_FILE=$THIS_FILE"_temp2.txt"
 if [ -e $TEMP_FILE ] ; then
    rm $TEMP_FILE
 fi
@@ -1092,8 +1105,8 @@ if [ $ERROR -eq 0 ] ; then
    # Find latest updates to packages.
    f_message $GUI "NOK" "Searching for Updates" "Finding latest updates to packages."
    #
-   #sudo apt update | tee -a uplist.tmp
-   sudo apt update > uplist.tmp 2>/dev/null
+   TEMP_FILE=$THIS_FILE"_temp.txt"
+   sudo apt update > $TEMP_FILE 2>/dev/null
    #
    # If updates exist, do you want to see package descriptions?
    # And do you want to upgrade the packages?
@@ -1103,13 +1116,13 @@ else
    f_bad_sudo_password $GUI
 fi
 #
-TEMP_FILE="$THIS_FILE_temp_file.txt"
-if [ -r $TEMP_FILE ] ; then
+TEMP_FILE=$THIS_FILE"_temp.txt"
+if [ -e $TEMP_FILE ] ; then
    rm $TEMP_FILE
 fi
 #
-TEMP_FILE2="$THIS_FILE_temp_file2.txt"
-if [ -r $TEMP_FILE ] ; then
+TEMP_FILE=$THIS_FILE"_temp2.txt"
+if [ -e $TEMP_FILE ] ; then
    rm $TEMP_FILE
 fi
 # All dun dun noodles.
