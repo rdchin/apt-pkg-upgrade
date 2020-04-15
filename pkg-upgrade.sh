@@ -9,7 +9,7 @@
 # |        Default Variable Values         |
 # +----------------------------------------+
 #
-VERSION="2020-04-11 20:26"
+VERSION="2020-04-14 20:39"
 THIS_FILE="pkg-upgrade.sh"
 #
 # +----------------------------------------+
@@ -55,6 +55,8 @@ THIS_FILE="pkg-upgrade.sh"
 ## Code Change History
 ##
 ## (After each edit made, please update Code History and VERSION.)
+##
+## 2020-04-14 *f_ques_upgrade added command "apt autoremove".
 ##
 ## 2020-04-11 *f_message and messages throughout script rewritten
 ##             for better compatibility between CLI, Dialog, Whiptail. 
@@ -359,13 +361,38 @@ f_arguments () {
 #
 f_ques_upgrade () {
       #
+      # Save $TEMP_FILE.
+      TEMP_FILE2=$THIS_FILE"_temp2".txt
+      cat $TEMP_FILE > $TEMP_FILE2
+      # Are there any software packages automatically installed but are no longer required?
+      ANS=$(grep autoremove $TEMP_FILE)
+      if [ -n "$ANS" ] ; then
+         # If $ANS is not zero length and contains the string "autoremove".
+         # Yes/No Question.
+         f_yn_question $1 "Y" "Remove extraneous software packages?" " \nSome software packages are no longer needed and may be removed.\n \nDo you want to remove unneeded software packages?"
+         # ANS=0 when <Yes> button pressed.
+         # ANS=1 when <No> button pressed.
+         #
+         # if <Yes> button pressed, then remove unneeded software packages.
+         if [ $ANS -eq 0 ] ; then
+            #
+            clear  # Blank the screen.
+            #
+            sudo apt autoremove
+            f_press_enter_key_to_continue
+         fi
+      fi
+      #
+      # Restore $TEMP_FILE.
+      TEMP_FILE=$TEMP_FILE2
       # Read the last line in the file $TEMP_FILE.
       X=$(tail -n 1 $TEMP_FILE)
+      #
       if [ "$X" = "All packages are up to date." ] ; then
-         f_message $1 "NOK" "Status of Software Packages" "All packages are at the latest version."
+         f_message $1 "NOK" "Status of Software Packages" "All software packages are at the latest version."
       else
          # Yes/No Question.
-         f_yn_question $1 "Y" "View Package Descriptions?" " \nSome packages are not up-to-date and need upgrading.\n \nNote: There may be a delay to display descriptions.\n      (especially if many packages need to be updated)\n \nDo you want to view package descriptions?"
+         f_yn_question $1 "Y" "View Software Package Descriptions?" " \nSome software packages are not up-to-date and need upgrading.\n \nNote: There may be a delay to display descriptions.\n      (especially if many software packages need to be updated)\n \nDo you want to view software package descriptions?"
          # ANS=0 when <Yes> button pressed.
          # ANS=1 when <No> button pressed.
          #
@@ -373,7 +400,7 @@ f_ques_upgrade () {
          if [ $ANS -eq 0 ] ; then
             f_list_packages
          fi
-         f_message $1 "NOK" "Upgrade Packages" "Running command: \"sudo apt upgrade\" to upgrade packages."
+         f_message $1 "NOK" "Upgrade Software Packages" "Running command: \"sudo apt upgrade\" to upgrade software packages."
          #
          clear  # Blank the screen.
          #
@@ -1103,7 +1130,7 @@ ERROR=$?
 if [ $ERROR -eq 0 ] ; then
    #
    # Find latest updates to packages.
-   f_message $GUI "NOK" "Searching for Updates" "Finding latest updates to packages."
+   f_message $GUI "NOK" "Searching for Software Updates" "Finding latest updates to software packages."
    #
    TEMP_FILE=$THIS_FILE"_temp.txt"
    sudo apt update > $TEMP_FILE 2>/dev/null
