@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-VERSION="2020-03-21 20:50"
+VERSION="2020-04-24 20:26"
 THIS_FILE="github_repo_scripts.sh"
 #
 # Specify TARGET Directory.
@@ -17,6 +17,11 @@ TARGET_DIR="scripts_downloaded_from_github"
 ## After each edit made, please update Code History and VERSION.
 ##
 ## Code Change History
+##
+## 2020-04-24 *Deleted from repository samba-mount,the scripts "mountup_gui.sh"
+##             and "mountup_lib_gui.lib" and renamed both of them to
+##             "mountup.sh" and "mountup.lib" thus effectively removing
+##             the text-only version of "mountup.sh".
 ##
 ## 2020-03-21 *f_wget added menu_module_sub1.lib.
 ##
@@ -70,7 +75,7 @@ TARGET_DIR="scripts_downloaded_from_github"
 # |                                                                          |
 # +--------------------------------------------------------------------------+
 #
-# Add actual share-point and mount-point names to scripts "mountup.sh" and "mountup_lib_gui.lib".
+# Add actual share-point and mount-point names to scripts "mountup.sh" and "mountup.lib".
 #
 # Format <Delimiter>//<Source File Server>/<Shared directory><Delimiter>/<Mount-point on local PC><Delimiter><Shared directory description>
 #
@@ -173,7 +178,7 @@ f_wget () {
          #
          # Repository samba-mount.
          REPOSITORY="https://raw.githubusercontent.com/rdchin/samba-mount/master/"
-         for SCRIPT in mountup.sh mountup_gui.sh mountup_lib_gui.lib
+         for SCRIPT in mountup.sh mountup.lib
          do
              f_wget_do $REPOSITORY $SCRIPT $1
          done
@@ -295,7 +300,7 @@ f_bak () {
 # Outputs: None.
 #
 f_edit_script_files () {
-      for SCRIPT in mountup.sh mountup_lib_gui.lib
+      for SCRIPT in mountup.sh mountup.lib
       do
           # Does file exist and is writeable?
           if [ -w ~/$1/$SCRIPT ] ; then
@@ -337,7 +342,7 @@ f_edit_sharing_names () {
          while read XSTR
          do
                case $XSTR in
-                    # Insert that line into script, "mountup.sh" or "mountup_lib_gui.lib".
+                    # Insert that line into script, "mountup.sh" or "mountup.lib".
                     [#][@][@]) # echo "XSTR=$XSTR"
                             # Insert the line of the real share-point and mount-point names into the script.
                             sed -i "$X"i"#" ~/$1/$2
@@ -372,7 +377,7 @@ if [ -e ~/$TARGET_DIR ] ; then
    # Download files from GitHub.
    f_wget $TARGET_DIR
    #
-   # Edit files mountup.sh and mountup_lib_gui.lib to customize for my LAN Host Names.
+   # Edit files mountup.sh and mountup.lib to customize for my LAN Host Names.
    f_edit_script_files $TARGET_DIR
 else
    echo -n $(tput setaf 1) # Set font to color red.
