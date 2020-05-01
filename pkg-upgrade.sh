@@ -9,7 +9,7 @@
 # |        Default Variable Values         |
 # +----------------------------------------+
 #
-VERSION="2020-04-28 23:08"
+VERSION="2020-05-01 00:33"
 THIS_FILE="pkg-upgrade.sh"
 TEMP_FILE=$THIS_FILE"_temp.txt"
 #
@@ -839,7 +839,7 @@ f_message () {
 # |      Function f_msg_color     |
 # +-------------------------------+
 #
-#     Rev: 2020-04-28
+#     Rev: 2020-05-01
 #  Inputs: $1 - Text string or text file. 
 #    Uses: None.
 # Outputs: ZNO. 
@@ -903,13 +903,16 @@ f_msg_color () {
              do
                 case "$1" in
                      *\\Z$COLOR*)
-                     # Change font color using "tput" and "setaf" commands.
-                     echo -n $(tput setaf $COLOR)
-                     #
-                     # Delete Dialog "\Z" commands.
-                     # Use command "sed" with "-e" to filter out multiple "\Z" commands.
-                     # Filter out "\Z[0-7]", "\Zb", \ZB", "\Zr", "\ZR", "\Zu", "\ZU", "\Zn".
-                     ZNO=$(echo $1 | sed -e 's|\\Z0||g' -e 's|\\Z1||g' -e 's|\\Z2||g' -e 's|\\Z3||g' -e 's|\\Z4||g' -e 's|\\Z5||g' -e 's|\\Z6||g' -e 's|\\Z7||g' -e 's|\\Zb||g' -e 's|\\ZB||g' -e 's|\\Zr||g' -e 's|\\ZR||g' -e 's|\\Zu||g' -e 's|\\ZU||g' -e 's|\\Zn||g')
+                        # Change font color using "tput" and "setaf" commands.
+                        echo -n $(tput setaf $COLOR)
+                        #
+                        # Delete Dialog "\Z" commands.
+                        # Use command "sed" with "-e" to filter out multiple "\Z" commands.
+                        # Filter out "\Z[0-7]", "\Zb", \ZB", "\Zr", "\ZR", "\Zu", "\ZU", "\Zn".
+                        ZNO=$(echo $1 | sed -e 's|\\Z0||g' -e 's|\\Z1||g' -e 's|\\Z2||g' -e 's|\\Z3||g' -e 's|\\Z4||g' -e 's|\\Z5||g' -e 's|\\Z6||g' -e 's|\\Z7||g' -e 's|\\Zb||g' -e 's|\\ZB||g' -e 's|\\Zr||g' -e 's|\\ZR||g' -e 's|\\Zu||g' -e 's|\\ZU||g' -e 's|\\Zn||g')
+                     ;;
+                     *)
+                        ZNO=$1
                 esac
              done
          #
