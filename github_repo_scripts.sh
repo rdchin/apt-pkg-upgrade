@@ -9,7 +9,7 @@
 # |        Default Variable Values         |
 # +----------------------------------------+
 #
-VERSION="2020-05-01 00:30"
+VERSION="2020-05-06 23:33"
 THIS_FILE="github_repo_scripts.sh"
 TEMP_FILE=$THIS_FILE"_temp.txt"
 #
@@ -59,6 +59,8 @@ TARGET_DIR="scripts_downloaded_from_github"
 ## After each edit made, please update Code History and VERSION.
 ##
 ## Code Change History
+##
+## 2020-05-06 *f_msg_ui_file_box_size, f_msg_ui_file_ok bug fixed in display.
 ##
 ## 2020-05-01 *Updated to latest standards.
 ##            *f_wget added new files in git repositories.
@@ -749,7 +751,7 @@ f_msg_color () {
 # |Function f_msg_ui_file_box_size|
 # +-------------------------------+
 #
-#     Rev: 2020-04-28
+#     Rev: 2020-05-06
 #  Inputs: $1 - "text", "dialog" or "whiptail" The CLI GUI application in use.
 #          $2 - "OK"  [OK] button at end of text.
 #               "NOK" No [OK] button or "Press Enter key to continue"
@@ -771,10 +773,10 @@ f_msg_ui_file_box_size () {
       # Calculate longest line length in TEMP_FILE to find maximum menu width for Dialog or Whiptail.
       # The "Word Count" wc command output will not include the TEMP_FILE name
       # if you redirect "<$TEMP_FILE" into wc.
-      X=$(wc --max-line-length <$TEMP_FILE)
+      X=$(wc --max-line-length <$4)
       #
       # Calculate number of lines or Menu Choices to find maximum menu lines for Dialog or Whiptail.
-      Y=$(wc --lines <$TEMP_FILE)
+      Y=$(wc --lines <$4)
       #
 } # End of function f_msg_ui_file_box_size.
 #
@@ -782,7 +784,7 @@ f_msg_ui_file_box_size () {
 # |   Function f_msg_ui_file_ok  |
 # +------------------------------+
 #
-#     Rev: 2020-04-28
+#     Rev: 2020-05-06
 #  Inputs: $1 - "text", "dialog" or "whiptail" The CLI GUI application in use.
 #          $2 - "OK"  [OK] button at end of text.
 #               "NOK" No [OK] button or "Press Enter key to continue"
@@ -833,7 +835,7 @@ f_msg_ui_file_ok () {
                  X=$XSCREEN
               fi
               #
-              whiptail --scrolltext --title "$3" --textbox "$TEMP_FILE" $Y $X
+              whiptail --scrolltext --title "$3" --textbox "$4" $Y $X
            ;;
       esac
       #

@@ -9,7 +9,7 @@
 # |        Default Variable Values         |
 # +----------------------------------------+
 #
-VERSION="2020-05-01 00:33"
+VERSION="2020-05-06 23:29"
 THIS_FILE="pkg-upgrade.sh"
 TEMP_FILE=$THIS_FILE"_temp.txt"
 #
@@ -55,6 +55,8 @@ TEMP_FILE=$THIS_FILE"_temp.txt"
 ## Code Change History
 ##
 ## (After each edit made, please update Code History and VERSION.)
+##
+## 2020-05-06 *f_msg_ui_file_box_size, f_msg_ui_file_ok bug fixed in display.
 ##
 ## 2020-04-28 *Main updated to latest standards.
 ##
@@ -923,7 +925,7 @@ f_msg_color () {
 # |Function f_msg_ui_file_box_size|
 # +-------------------------------+
 #
-#     Rev: 2020-04-28
+#     Rev: 2020-05-06
 #  Inputs: $1 - "text", "dialog" or "whiptail" The CLI GUI application in use.
 #          $2 - "OK"  [OK] button at end of text.
 #               "NOK" No [OK] button or "Press Enter key to continue"
@@ -945,10 +947,10 @@ f_msg_ui_file_box_size () {
       # Calculate longest line length in TEMP_FILE to find maximum menu width for Dialog or Whiptail.
       # The "Word Count" wc command output will not include the TEMP_FILE name
       # if you redirect "<$TEMP_FILE" into wc.
-      X=$(wc --max-line-length <$TEMP_FILE)
+      X=$(wc --max-line-length <$4)
       #
       # Calculate number of lines or Menu Choices to find maximum menu lines for Dialog or Whiptail.
-      Y=$(wc --lines <$TEMP_FILE)
+      Y=$(wc --lines <$4)
       #
 } # End of function f_msg_ui_file_box_size.
 #
@@ -957,6 +959,21 @@ f_msg_ui_file_box_size () {
 # +------------------------------+
 #
 #     Rev: 2020-04-28
+#  Inputs: $1 - "text", "dialog" or "whiptail" The CLI GUI application in use.
+#          $2 - "OK"  [OK] button at end of text.
+#               "NOK" No [OK] button or "Press Enter key to continue"
+#               at end of text but pause n seconds
+#               to allow reader to read text by using sleep n command.
+#          $3 - Title.
+#          $4 - Text string or text file. 
+#    Uses: None.
+# Outputs: ERROR. 
+#
+# +------------------------------+
+# |   Function f_msg_ui_file_ok  |
+# +------------------------------+
+#
+#     Rev: 2020-05-06
 #  Inputs: $1 - "text", "dialog" or "whiptail" The CLI GUI application in use.
 #          $2 - "OK"  [OK] button at end of text.
 #               "NOK" No [OK] button or "Press Enter key to continue"
@@ -1007,7 +1024,7 @@ f_msg_ui_file_ok () {
                  X=$XSCREEN
               fi
               #
-              whiptail --scrolltext --title "$3" --textbox "$TEMP_FILE" $Y $X
+              whiptail --scrolltext --title "$3" --textbox "$4" $Y $X
            ;;
       esac
       #
