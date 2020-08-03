@@ -9,7 +9,7 @@
 # |        Default Variable Values         |
 # +----------------------------------------+
 #
-VERSION="2020-06-22 14:20"
+VERSION="2020-07-31 14:16"
 THIS_FILE="github_repo_scripts.sh"
 TEMP_FILE=$THIS_FILE"_temp.txt"
 #
@@ -59,6 +59,15 @@ TARGET_DIR="scripts_downloaded_from_github"
 ## After each edit made, please update Code History and VERSION.
 ##
 ## Code Change History
+##
+## 2020-07-31 *Reaffirmed this script SHOULD NOT be dependent on BASH Function
+##             Library because it may not be present and this script downloads
+##             it from Github.com.
+##            *Updated to latest standards.
+##            *Main added chmod 755 $TARGET_DIR to make scripts executable.
+##            *f_test_connection updated to latest standard.
+##            *f_test_connect changed the display time to only 1 sec. of the
+##             status message of the network connection.
 ##
 ## 2020-06-22 *Updated to latest standards.
 ##            *Added repository BASH Function Library.
@@ -389,7 +398,7 @@ f_test_connect () {
       # Use ping <IP Address> or <URL> to test connection.
       #
       #f_test_connection $1 raw.githubusercontent.com
-      f_test_connection $1 www.github.com
+      f_test_connection $1 www.github.com 1
       #
 } # End of function f_test_connect.
 #
@@ -397,9 +406,10 @@ f_test_connect () {
 # |        Function f_test_connection      |
 # +----------------------------------------+
 #
-#     Rev: 2020-06-03
+#     Rev: 2020-07-16
 #  Inputs: $1 - "text", "dialog" or "whiptail" The CLI GUI application in use.
-#          $2 Network name of server. 
+#          $2 - Network name of server. 
+#          $3 - Pause n seconds to read message (Optional).
 #    Uses: None.
 # Outputs: ERROR. 
 #
@@ -409,9 +419,9 @@ f_test_connection () {
       ping -c 1 -q $2 >/dev/null # Ping server address.
       ERROR=$?
       if [ $ERROR -ne 0 ] ; then
-         f_message $1 "NOK" "Ping Test Network Connection" " \n\Z1\Zb  No network connection to $2.\Zn"
+         f_message $1 "NOK" "Ping Test Network Connection" " \n\Z1\Zb  No network connection to $2.\Zn" $3
       else
-         f_message $1 "NOK" "Ping Test Network Connection" "Network connnection to $2 is good."
+         f_message $1 "NOK" "Ping Test Network Connection" "Network connnection to $2 is good." $3
       fi
       #
       clear # Blank the screen.
@@ -515,7 +525,7 @@ f_about () {
       echo "Script: $THIS_FILE. Version: $VERSION" >$TEMP_FILE
       echo >>$TEMP_FILE
       #
-      # Display text (all lines beginning ("^") with "#& " but do not print "#& ").
+      # Display text (all lines beginning ("^") with "#&" but do not print "#&").
       # sed substitutes null for "#&" at the beginning of each line
       # so it is not printed.
       DELIM="^#&"
@@ -599,7 +609,7 @@ f_help_message () {
 # |       Function f_message     |
 # +------------------------------+
 #
-#     Rev: 2020-06-03
+#     Rev: 2020-07-16
 #  Inputs: $1 - "text", "dialog" or "whiptail" The CLI GUI application in use.
 #          $2 - "OK"  [OK] button at end of text.
 #               "NOK" No [OK] button or "Press Enter key to continue"
@@ -655,7 +665,7 @@ f_message () {
                  # If $4 is a text file, then calculate number of lines and length
                  # of sentences to calculate height and width of Dialog box.
                  # Calculate dialog/whiptail box dimensions $YBOX, $XBOX.
-                 f_msg_ui_file_box_size $1 $2 "$3" "$4"
+                 f_msg_ui_file_box_size "$4"
                  #
                  if [ "$2" = "OK" ] ; then
                     # Display contents of text file with an [OK] button.
@@ -670,7 +680,7 @@ f_message () {
                  # sentence or multiple sentences delimited by "\n"?
                  # Calculate the length of the longest of sentence.
                  # Calculate dialog/whiptail box dimensions $YBOX, $XBOX.
-                 f_msg_ui_str_box_size $1 $2 "$3" "$4"
+                 f_msg_ui_str_box_size "$4"
                  #
                  if [ "$2" = "OK" ] ; then
                     # Display contents of text string with an [OK] button.
@@ -748,14 +758,14 @@ f_msg_color () {
       # man dialog --colors
       # Interpret embedded "\Z" sequences in the Dialog text by the following
       # character, which tells Dialog to set colors or video attributes:
-      # •   0 through 7 are the ANSI color numbers used in curses: black, red, green,
-      #     yellow, blue, magenta, cyan and white respectively.
-      # •   Bold is set by 'b', reset by 'B'.
-      # •   Reverse is set by 'r', reset by 'R'.
-      # •   Underline is set by 'u', reset by 'U'.
-      # •   The settings are cumulative, e.g., "\Zb\Z1" makes the following text bold
-      #     (perhaps bright) red.
-      # •   Restore normal settings with "\Zn".
+      # *0 through 7 are the ANSI color numbers used in curses: black, red, green,
+      #  yellow, blue, magenta, cyan and white respectively.
+      # *Bold is set by 'b', reset by 'B'.
+      # *Reverse is set by 'r', reset by 'R'.
+      # *Underline is set by 'u', reset by 'U'.
+      # *The settings are cumulative, e.g., "\Zb\Z1" makes the following text bold
+      #  (perhaps bright) red.
+      # *Restore normal settings with "\Zn".
       #
       # BASH commands to change the color of characters in a terminal.
       # bold    "$(tput bold)"
@@ -815,21 +825,15 @@ f_msg_color () {
 # |Function f_msg_ui_file_box_size|
 # +-------------------------------+
 #
-#     Rev: 2020-05-14
-#  Inputs: $1 - "text", "dialog" or "whiptail" The CLI GUI application in use.
-#          $2 - "OK"  [OK] button at end of text.
-#               "NOK" No [OK] button or "Press Enter key to continue"
-#               at end of text but pause n seconds
-#               to allow reader to read text by using sleep n command.
-#          $3 - Title.
-#          $4 - Text string or text file. 
+#     Rev: 2020-07-16
+#  Inputs: $1 - Text string or text file. 
 #    Uses: None.
 # Outputs: XBOX, YBOX.
 #
 f_msg_ui_file_box_size () {
       #
-      # If $4 is a text file.
-      # Calculate dialog/whiptail box dimensions $X, $Y.
+      # If $1 is a text file.
+      # Calculate dialog/whiptail box dimensions $XBOX, $YBOX.
       #
       # If text file, calculate number of lines and length of sentences.
       # to calculate height and width of Dialog box.
@@ -837,10 +841,10 @@ f_msg_ui_file_box_size () {
       # Calculate longest line length in TEMP_FILE to find maximum menu width for Dialog or Whiptail.
       # The "Word Count" wc command output will not include the TEMP_FILE name
       # if you redirect "<$TEMP_FILE" into wc.
-      XBOX=$(wc --max-line-length <$4)
+      XBOX=$(wc --max-line-length <$1)
       #
       # Calculate number of lines or Menu Choices to find maximum menu lines for Dialog or Whiptail.
-      YBOX=$(wc --lines <$4)
+      YBOX=$(wc --lines <$1)
       #
 } # End of function f_msg_ui_file_box_size.
 #
@@ -974,14 +978,8 @@ f_msg_ui_file_nok () {
 # |Function f_msg_ui_str_box_size|
 # +------------------------------+
 #
-#     Rev: 2020-05-23
-#  Inputs: $1 - "text", "dialog" or "whiptail" The CLI GUI application in use.
-#          $2 - "OK"  [OK] button at end of text.
-#               "NOK" No [OK] button or "Press Enter key to continue"
-#               at end of text but pause n seconds
-#               to allow reader to read text by using sleep n command.
-#          $3 - Title.
-#          $4 - Text string or text file. 
+#     Rev: 2020-07-16
+#  Inputs: $1 - Text string or text file. 
 #    Uses: None.
 # Outputs: XBOX, YBOX, ZNO (string stripped of Dialog "\Z" commands).
 #
@@ -989,25 +987,26 @@ f_msg_ui_str_box_size () {
       #
       # Calculate dialog/whiptail box dimensions $X, $Y.
       #
-      # Does $4 string contain "\n"?  Does the string $4 contain multiple sentences?
+      # Does $1 string contain "\n"?  Does the string $4 contain multiple sentences?
       #
       # Debug hint: If the box has the minimum size regardless of length or width of text,
       #             the variable $TEMP_FILE may have been unset (i.e. unset TEMP_FILE).
       #             If the $TEMP_FILE is undefined, you will have a minimum box size.
       #
-      case $4 in
+      case $1 in
            *\n*)
-              # Yes, string $4 contains multiple sentences.
+              # Yes, string $1 contains multiple sentences.
               #
               # Use command "sed" with "-e" to filter out multiple "\Z" commands.
               # Filter out "\Z[0-7]", "\Zb", \ZB", "\Zr", "\ZR", "\Zu", "\ZU", "\Zn".
-              ZNO=$(echo $4 | sed -e 's|\\Z0||g' -e 's|\\Z1||g' -e 's|\\Z2||g' -e 's|\\Z3||g' -e 's|\\Z4||g' -e 's|\\Z5||g' -e 's|\\Z6||g' -e 's|\\Z7||g' -e 's|\\Zb||g' -e 's|\\ZB||g' -e 's|\\Zr||g' -e 's|\\ZR||g' -e 's|\\Zu||g' -e 's|\\ZU||g' -e 's|\\Zn||g')
+              ZNO=$(echo $1 | sed -e 's|\\Z0||g' -e 's|\\Z1||g' -e 's|\\Z2||g' -e 's|\\Z3||g' -e 's|\\Z4||g' -e 's|\\Z5||g' -e 's|\\Z6||g' -e 's|\\Z7||g' -e 's|\\Zb||g' -e 's|\\ZB||g' -e 's|\\Zr||g' -e 's|\\ZR||g' -e 's|\\Zu||g' -e 's|\\ZU||g' -e 's|\\Zn||g')
               #
               # Calculate the length of the longest sentence with the $4 string.
               # How many sentences?
               # Replace "\n" with "%" and then use awk to count how many sentences.
               # Save number of sentences.
-              YBOX=$(echo $ZNO | sed 's|\\n|%|g'| awk -F '%' '{print NF}')
+              # Use wc --lines on TEMP_FILE instead of sed-awk below.
+              #YBOX=$(echo $ZNO | sed 's|\\n|%|g'| awk -F '%' '{print NF}')
               #
               # Output string without Dialog "\Z" commands into file $TEMP_FILE for wc processing.
               # The echo -e option replaces "\n" with actual <CR><LF> for wc to calculate actual longest line length.
@@ -1026,14 +1025,16 @@ f_msg_ui_str_box_size () {
               # The "Word Count" wc command output will not include
               # the TEMP_FILE name if you redirect "<$TEMP_FILE" into wc.
               XBOX=$(wc --max-line-length < $TEMP_FILE)
+              YBOX=$(wc --lines < $TEMP_FILE)
            ;;
            *)
               # Use command "sed" with "-e" to filter out multiple "\Z" commands.
               # Filter out "\Z[0-7]", "\Zb", \ZB", "\Zr", "\ZR", "\Zu", "\ZU", "\Zn".
-              ZNO=$(echo $4 | sed -e 's|\\Z0||g' -e 's|\\Z1||g' -e 's|\\Z2||g' -e 's|\\Z3||g' -e 's|\\Z4||g' -e 's|\\Z5||g' -e 's|\\Z6||g' -e 's|\\Z7||g' -e 's|\\Zb||g' -e 's|\\ZB||g' -e 's|\\Zr||g' -e 's|\\ZR||g' -e 's|\\Zu||g' -e 's|\\ZU||g' -e 's|\\Zn||g')
+              ZNO=$(echo $1 | sed -e 's|\\Z0||g' -e 's|\\Z1||g' -e 's|\\Z2||g' -e 's|\\Z3||g' -e 's|\\Z4||g' -e 's|\\Z5||g' -e 's|\\Z6||g' -e 's|\\Z7||g' -e 's|\\Zb||g' -e 's|\\ZB||g' -e 's|\\Zr||g' -e 's|\\ZR||g' -e 's|\\Zu||g' -e 's|\\ZU||g' -e 's|\\Zn||g')
               #
               # No, line length is $4 string length. 
               XBOX=$(echo -n "$ZNO" | wc -c)
+              # Only one sentence and one line in the $1 string.
               YBOX=1
            ;;
       esac
@@ -1664,6 +1665,9 @@ if [ -e ~/$TARGET_DIR ] ; then
    #
    # Edit files mountup.sh and mountup.lib to customize for my LAN Host Names.
    #f_edit_script_files $1 $TARGET_DIR
+   #
+   # Make newly downloaded files executable.
+   chmod -R 755 ~/$TARGET_DIR
 else
    f_message $GUI "OK" "Error" " >>> \Z1\ZbDownload directory does not exist: ~/$TARGET_DIR\Zn <<<"
 fi
