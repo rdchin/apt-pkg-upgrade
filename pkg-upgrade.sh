@@ -9,7 +9,7 @@
 # |        Default Variable Values         |
 # +----------------------------------------+
 #
-VERSION="2020-08-06 17:10"
+VERSION="2020-08-07 16:41"
 THIS_FILE="pkg-upgrade.sh"
 TEMP_FILE=$THIS_FILE"_temp.txt"
 #
@@ -17,15 +17,15 @@ TEMP_FILE=$THIS_FILE"_temp.txt"
 # |            Brief Description           |
 # +----------------------------------------+
 #
-#@ Brief Description
-#@
-#@ Script pkg-upgrade.sh will show a description of each upgradable package
-#@ before upgrading each package.
-#@
-#@ Required scripts: None
-#@
-#@ Usage: bash pkg-upgrade.sh
-#@        (not sh pkg-upgrade.sh)
+#& Brief Description
+#&
+#& Script pkg-upgrade.sh will show a description of each upgradable package
+#& before upgrading each package.
+#&
+#& Required scripts: None
+#&
+#& Usage: bash pkg-upgrade.sh
+#&        (not sh pkg-upgrade.sh)
 #
 # +----------------------------------------+
 # |             Help and Usage             |
@@ -47,6 +47,11 @@ TEMP_FILE=$THIS_FILE"_temp.txt"
 #?
 #?bash pkg-upgrade.sh --history  Displays script code history.
 #?                    --hist
+#?
+#? Examples using 2 arguments:
+#?
+#?bash pkg-upgrade.sh --hist text
+#?                    --ver dialog
 #
 # +----------------------------------------+
 # |           Code Change History          |
@@ -55,6 +60,12 @@ TEMP_FILE=$THIS_FILE"_temp.txt"
 ## Code Change History
 ##
 ## (After each edit made, please update Code History and VERSION.)
+##
+## 2020-08-07 *f_about, f_help_message, f_code_history deleted since
+##             these functions are maintained in common_bash_function.lib.
+##            *f_display_common updated to add option to display
+##             without an "OK" button in Dialog.
+##             However, Whiptail only displays with an "OK" button.
 ##
 ## 2020-08-06 *f_obsolete_packages added checking for packages held back
 ##             and display of applicable apt messages.
@@ -136,80 +147,38 @@ TEMP_FILE=$THIS_FILE"_temp.txt"
 ## 2019-03-24 *Initial release.
 #
 # +------------------------------------+
-# |          Function f_about          |
-# +------------------------------------+
-#
-#     Rev: 2020-06-27
-#  Inputs: $1=GUI - "text", "dialog" or "whiptail" the preferred user-interface.
-#          THIS_DIR, THIS_FILE, VERSION.
-#    Uses: DELIM.
-# Outputs: None.
-#
-f_about () {
-      #
-      # Display text (all lines beginning ("^") with "#& " but do not print "#& ").
-      # sed substitutes null for "#& " at the beginning of each line
-      # so it is not printed.
-      DELIM="^#&"
-      f_display_common $1 $DELIM
-      #
-} # End of f_about.
-#
-# +------------------------------------+
-# |      Function f_code_history       |
-# +------------------------------------+
-#
-#     Rev: 2020-06-27
-#  Inputs: $1=GUI - "text", "dialog" or "whiptail" the preferred user-interface.
-#          THIS_DIR, THIS_FILE, VERSION.
-#    Uses: DELIM.
-# Outputs: None.
-#
-f_code_history () {
-      #
-      # Display text (all lines beginning ("^") with "##" but do not print "##").
-      # sed substitutes null for "##" at the beginning of each line
-      # so it is not printed.
-      DELIM="^##"
-      f_display_common $1 $DELIM
-      #
-} # End of function f_code_history.
-#
-# +------------------------------------+
-# |      Function f_help_message       |
-# +------------------------------------+
-#
-#     Rev: 2020-06-27
-#  Inputs: $1=GUI - "text", "dialog" or "whiptail" the preferred user-interface.
-#          THIS_DIR, THIS_FILE, VERSION.
-#    Uses: DELIM.
-# Outputs: None.
-#
-f_help_message () {
-      #
-      # Display text (all lines beginning ("^") with "#?" but do not print "#?").
-      # sed substitutes null for "#?" at the beginning of each line
-      # so it is not printed.
-      DELIM="^#?"
-      f_display_common $1 $DELIM
-      #
-} # End of f_help_message.
-#
-# +------------------------------------+
 # |     Function f_display_common      |
 # +------------------------------------+
 #
-#     Rev: 2020-06-27
+#     Rev: 2020-08-07
 #  Inputs: $1=GUI - "text", "dialog" or "whiptail" the preferred user-interface.
 #          $2=Delimiter of text to be displayed.
+#          $3="NOK", "OK", or null [OPTIONAL] to control display of "OK" button.
+#          $4=Pause $4 seconds [OPTIONAL]. If "NOK" then pause to allow text to be read.
 #          THIS_DIR, THIS_FILE, VERSION.
 #    Uses: X.
 # Outputs: None.
 #
+# PLEASE NOTE: RENAME THIS FUNCTION WITHOUT SUFFIX "_TEMPLATE" AND COPY
+#              THIS FUNCTION INTO ANY SCRIPT WHICH DEPENDS ON THE
+#              LIBRARY FILE "common_bash_function.lib".
+#
 f_display_common () {
       #
-      # Specify $THIS_FILE name of any file containing the text to be displayed.
-      #THIS_FILE="pkg-upgrade.sh"
+      # Specify $THIS_FILE name of the file containing the text to be displayed.
+      # $THIS_FILE may be re-defined inadvertently when a library file defines it
+      # so when the command, source [ LIBRARY_FILE.lib ] is used, $THIS_FILE is
+      # redefined to the name of the library file, LIBRARY_FILE.lib.
+      # For that reason, all library files now have the line
+      # THIS_FILE="[LIBRARY_FILE.lib]" deleted.
+      #
+      #================================================================================
+      # EDIT THE LINE BELOW TO DEFINE $THIS_FILE AS THE ACTUAL FILE NAME WHERE THE 
+      # ABOUT, CODE HISTORY, AND HELP MESSAGE TEXT IS LOCATED.
+      #================================================================================
+                                           #
+      THIS_FILE="pkg-upgrade.sh"  # <<<--- INSERT ACTUAL FILE NAME HERE.
+                                           #
       TEMP_FILE=$THIS_DIR/$THIS_FILE"_temp.txt"
       #
       # Set $VERSION according as it is set in the beginning of $THIS_FILE.
@@ -226,7 +195,14 @@ f_display_common () {
       # so it is not printed.
       sed -n "s/$2//"p $THIS_DIR/$THIS_FILE >> $TEMP_FILE
       #
-      f_message $1 "OK" "Code History (use arrow keys to scroll up/down/side-ways)" $TEMP_FILE
+      case $3 in
+           "NOK" | "nok")
+              f_message $1 "NOK" "Message" $TEMP_FILE $4
+           ;;
+           *)
+              f_message $1 "OK" "(use arrow keys to scroll up/down/side-ways)" $TEMP_FILE
+           ;;
+      esac
       #
 } # End of function f_display_common.
 #
@@ -264,7 +240,12 @@ f_ques_upgrade () {
          #
          clear  # Blank the screen.
          #
-         sudo apt upgrade | tee $TEMP_FILE
+         # Redirect error messages to bit bucket.
+         # Don't display error messages "WARNING: Apt does not have a stable CLI interface."
+         #2>/dev/null
+         # 1=standard messages, 2=error messages, &=both.
+         #
+         sudo apt upgrade > $2 2>/dev/null
          f_obsolete_packages $1 $2
       else
          # Yes/No Question.
@@ -548,10 +529,10 @@ fi
 f_test_environment
 #
 # Show About this script message.
-f_about $GUI
+f_about $GUI "NOK" 3
 #
 # Show Usage message.
-f_help_message $GUI
+# f_help_message $GUI "NOK" 3
 #
 #GUI="whiptail"  #Test diagnostic line.
 #GUI="dialog"    #Test diagnostic line.
@@ -568,7 +549,7 @@ ERROR=$?
 if [ $ERROR -eq 0 ] ; then
    #
    # Find latest updates to packages.
-   f_message $GUI "NOK" "Searching for Software Updates" "Finding latest updates to software packages."
+   f_message $GUI "NOK" "Searching for Software Updates" "Using command 'apt update' to find latest updates. Please be patient."
    #
    TEMP_FILE=$THIS_FILE"_temp.txt"
    sudo apt update > $TEMP_FILE 2>/dev/null

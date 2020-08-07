@@ -9,7 +9,7 @@
 # |        Default Variable Values         |
 # +----------------------------------------+
 #
-VERSION="2020-08-06 17:10"
+VERSION="2020-08-07 16:41"
 THIS_FILE="github_repo_scripts.sh"
 TEMP_FILE=$THIS_FILE"_temp.txt"
 #
@@ -38,19 +38,28 @@ TARGET_DIR="scripts_downloaded_from_github"
 # |             Help and Usage             |
 # +----------------------------------------+
 #
-#?    Usage: bash github_repo_scripts.sh [OPTION]
+#?    Usage: bash github_repo_scripts.sh [OPTION(S)]
 #? Examples:
 #?
-#?bash sample.sh --help     # Displays this help message.
-#?               -?
+#?bash github_repo_scripts.sh text      # Use Cmd-line user-interface (80x24 min.)
+#?                            dialog    # Use Dialog   user-interface.
+#?                            whiptail  # Use Whiptail user-interface.
 #?
-#?bash sample.sh --about    # Displays script version.
-#?               --version
-#?               --ver
-#?               -v
+#?bash github_repo_scripts.sh --help    # Displays this help message.
+#?                            -?
 #?
-#?bash sample.sh --history  # Displays script code history.
-#?               --hist
+#?bash github_repo_scripts.sh --about   # Displays script version.
+#?                            --version
+#?                            --ver
+#?                            -v
+#?
+#?bash github_repo_scripts.sh --history # Displays script code history.
+#?                            --hist
+#?
+#? Examples using 2 arguments:
+#?
+#?bash github_repo_scripts.sh --hist text
+#?                            --ver dialog
 #
 # +----------------------------------------+
 # |           Code Change History          |
@@ -59,6 +68,8 @@ TARGET_DIR="scripts_downloaded_from_github"
 ## After each edit made, please update Code History and VERSION.
 ##
 ## Code Change History
+##
+## 2020-08-07 *Updated to latest standards.
 ##
 ## 2020-07-31 *Reaffirmed this script SHOULD NOT be dependent on BASH Function
 ##             Library because it may not be present and this script downloads
@@ -177,13 +188,18 @@ f_script_path () {
 # |         Function f_arguments           |
 # +----------------------------------------+
 #
-#     Rev: 2020-06-21
+#     Rev: 2020-06-27
 #  Inputs: $1=Argument
 #             [--help] [ -h ] [ -? ]
 #             [--about]
 #             [--version] [ -ver ] [ -v ] [--about ]
 #             [--history] [--hist ]
 #             [] [ text ] [ dialog ] [ whiptail ]
+#             [ --help dialog ]  [ --help whiptail ]
+#             [ --about dialog ] [ --about whiptail ]
+#             [ --hist dialog ]  [ --hist whiptail ]
+#          $2=Argument
+#             [ text ] [ dialog ] [ whiptail ] 
 #    Uses: None.
 # Outputs: GUI, ERROR.
 #
@@ -385,22 +401,28 @@ f_test_dash () {
 # |         Function f_test_connect        |
 # +----------------------------------------+
 #
-#     Rev: 2020-04-28
+#     Rev: 2020-08-07
 #  Inputs: $1=GUI - "text", "dialog" or "whiptail" the preferred user-interface.
 #    Uses: None.
 # Outputs: None.
 #
+# PLEASE NOTE: RENAME THIS FUNCTION WITHOUT SUFFIX "_TEMPLATE" AND COPY
+#              THIS FUNCTION INTO ANY SCRIPT WHICH DEPENDS ON THE
+#              LIBRARY FILE "common_bash_function.lib".
+#
 f_test_connect () {
       #
-      # Use ping 8.8.8.8 to test connection.
-      # f_test_connection $1 8.8.8.8
+      # Test network connection to IP address or web site.
       #
-      # Use ping <IP Address> or <URL> to test connection.
+      # Use ping <IP Address> or <URL> <pause secs. to read message>.
+      # Examples:
+      #f_test_connection 192.168.1.1
+      #f_test_connection $1 8.8.8.8 2 (2-second pause to read messages).
+      #f_test_connection $1 www.dropbox.com 1 (1-second pause to read messages).
       #
-      #f_test_connection $1 raw.githubusercontent.com
-      f_test_connection $1 www.github.com 1
+      f_test_connection $1 github.com 1
       #
-} # End of function f_test_connect.
+} # End of function f_test_connect
 #
 # +----------------------------------------+
 # |        Function f_test_connection      |
@@ -504,34 +526,24 @@ f_abort () {
 # |          Function f_about          |
 # +------------------------------------+
 #
-#     Rev: 2020-05-28
+#     Rev: 2020-08-07
 #  Inputs: $1=GUI - "text", "dialog" or "whiptail" the preferred user-interface.
+#          $2="NOK", "OK", or null [OPTIONAL] to control display of "OK" button.
+#          $3=Pause $3 seconds [OPTIONAL]. If "NOK" then pause to allow text to be read.
 #          THIS_DIR, THIS_FILE, VERSION.
-#    Uses: X.
+#    Uses: DELIM.
 # Outputs: None.
+#
+#    NOTE: This function needs to be in the same library or file as
+#          the function f_display_common.
 #
 f_about () {
       #
-      # Specify $THIS_FILE name of any file containing the text to be displayed.
-      THIS_FILE="github_repo_scripts.sh"
-      TEMP_FILE=$THIS_DIR/$THIS_FILE"_temp.txt"
-      #
-      # Set $VERSION according as it is set in the beginning of $THIS_FILE.
-      X=$(grep --max-count=1 "VERSION" $THIS_FILE)
-      # X="VERSION=YYYY-MM-DD HH:MM"
-      # Use command "eval" to set $VERSION.
-      eval $X
-      #
-      echo "Script: $THIS_FILE. Version: $VERSION" >$TEMP_FILE
-      echo >>$TEMP_FILE
-      #
-      # Display text (all lines beginning ("^") with "#&" but do not print "#&").
-      # sed substitutes null for "#&" at the beginning of each line
+      # Display text (all lines beginning ("^") with "#& " but do not print "#& ").
+      # sed substitutes null for "#& " at the beginning of each line
       # so it is not printed.
       DELIM="^#&"
-      sed -n "s/$DELIM//"p $THIS_DIR/$THIS_FILE >> $TEMP_FILE
-      #
-      f_message $1 "OK" "About (use arrow keys to scroll up/down/side-ways)" $TEMP_FILE
+      f_display_common $1 $DELIM $2 $3
       #
 } # End of f_about.
 #
@@ -539,34 +551,24 @@ f_about () {
 # |      Function f_code_history       |
 # +------------------------------------+
 #
-#     Rev: 2020-05-24
+#     Rev: 2020-08-07
 #  Inputs: $1=GUI - "text", "dialog" or "whiptail" the preferred user-interface.
+#          $2="NOK", "OK", or null [OPTIONAL] to control display of "OK" button.
+#          $3=Pause $3 seconds [OPTIONAL]. If "NOK" then pause to allow text to be read.
 #          THIS_DIR, THIS_FILE, VERSION.
-#    Uses: X.
+#    Uses: DELIM.
 # Outputs: None.
 #
+#    NOTE: This function needs to be in the same library or file as
+#          the function f_display_common.
+#
 f_code_history () {
-      #
-      # Specify $THIS_FILE name of any file containing the text to be displayed.
-      THIS_FILE="github_repo_scripts.sh"
-      TEMP_FILE=$THIS_DIR/$THIS_FILE"_temp.txt"
-      #
-      # Set $VERSION according as it is set in the beginning of $THIS_FILE.
-      X=$(grep --max-count=1 "VERSION" $THIS_FILE)
-      # X="VERSION=YYYY-MM-DD HH:MM"
-      # Use command "eval" to set $VERSION.
-      eval $X
-      #
-      echo "Script: $THIS_FILE. Version: $VERSION" >$TEMP_FILE
-      echo >>$TEMP_FILE
       #
       # Display text (all lines beginning ("^") with "##" but do not print "##").
       # sed substitutes null for "##" at the beginning of each line
       # so it is not printed.
       DELIM="^##"
-      sed -n "s/$DELIM//"p $THIS_DIR/$THIS_FILE >> $TEMP_FILE
-      #
-      f_message $1 "OK" "Code History (use arrow keys to scroll up/down/side-ways)" $TEMP_FILE
+      f_display_common $1 $DELIM $2 $3
       #
 } # End of function f_code_history.
 #
@@ -574,16 +576,60 @@ f_code_history () {
 # |      Function f_help_message       |
 # +------------------------------------+
 #
-#     Rev: 2020-05-24
+#     Rev: 2020-08-07
 #  Inputs: $1=GUI - "text", "dialog" or "whiptail" the preferred user-interface.
+#          $2="NOK", "OK", or null [OPTIONAL] to control display of "OK" button.
+#          $3=Pause $3 seconds [OPTIONAL]. If "NOK" then pause to allow text to be read.
+#          THIS_DIR, THIS_FILE, VERSION.
+#    Uses: DELIM.
+# Outputs: None.
+#
+#    NOTE: This function needs to be in the same library or file as
+#          the function f_display_common.
+#
+f_help_message () {
+      #
+      # Display text (all lines beginning ("^") with "#?" but do not print "#?").
+      # sed substitutes null for "#?" at the beginning of each line
+      # so it is not printed.
+      DELIM="^#?"
+      f_display_common $1 $DELIM $2 $3
+      #
+} # End of f_help_message.
+#
+# +------------------------------------+
+# |     Function f_display_common      |
+# +------------------------------------+
+#
+#     Rev: 2020-08-07
+#  Inputs: $1=GUI - "text", "dialog" or "whiptail" the preferred user-interface.
+#          $2=Delimiter of text to be displayed.
+#          $3="NOK", "OK", or null [OPTIONAL] to control display of "OK" button.
+#          $4=Pause $4 seconds [OPTIONAL]. If "NOK" then pause to allow text to be read.
 #          THIS_DIR, THIS_FILE, VERSION.
 #    Uses: X.
 # Outputs: None.
 #
-f_help_message () {
+# PLEASE NOTE: RENAME THIS FUNCTION WITHOUT SUFFIX "_TEMPLATE" AND COPY
+#              THIS FUNCTION INTO ANY SCRIPT WHICH DEPENDS ON THE
+#              LIBRARY FILE "common_bash_function.lib".
+#
+f_display_common () {
       #
-      # Specify $THIS_FILE name of any file containing the text to be displayed.
-      THIS_FILE="github_repo_scripts.sh"
+      # Specify $THIS_FILE name of the file containing the text to be displayed.
+      # $THIS_FILE may be re-defined inadvertently when a library file defines it
+      # so when the command, source [ LIBRARY_FILE.lib ] is used, $THIS_FILE is
+      # redefined to the name of the library file, LIBRARY_FILE.lib.
+      # For that reason, all library files now have the line
+      # THIS_FILE="[LIBRARY_FILE.lib]" deleted.
+      #
+      #================================================================================
+      # EDIT THE LINE BELOW TO DEFINE $THIS_FILE AS THE ACTUAL FILE NAME WHERE THE 
+      # ABOUT, CODE HISTORY, AND HELP MESSAGE TEXT IS LOCATED.
+      #================================================================================
+                                           #
+      THIS_FILE="github_repo_scripts.sh"  # <<<--- INSERT ACTUAL FILE NAME HERE.
+                                           #
       TEMP_FILE=$THIS_DIR/$THIS_FILE"_temp.txt"
       #
       # Set $VERSION according as it is set in the beginning of $THIS_FILE.
@@ -592,18 +638,24 @@ f_help_message () {
       # Use command "eval" to set $VERSION.
       eval $X
       #
-      echo "Script: $THIS_FILE. Version: $VERSION" >$TEMP_FILE
+      echo "Script: $THIS_FILE. Version: $VERSION" > $TEMP_FILE
       echo >>$TEMP_FILE
       #
-      # Display text (all lines beginning ("^") with "#?" but do not print "#?").
-      # sed substitutes null for "#?" at the beginning of each line
+      # Display text (all lines beginning ("^") with $2 but do not print $2).
+      # sed substitutes null for $2 at the beginning of each line
       # so it is not printed.
-      DELIM="^#?"
-      sed -n "s/$DELIM//"p $THIS_DIR/$THIS_FILE >> $TEMP_FILE
+      sed -n "s/$2//"p $THIS_DIR/$THIS_FILE >> $TEMP_FILE
       #
-      f_message $1 "OK" "Usage (use arrow keys to scroll up/down/side-ways)" $TEMP_FILE
+      case $3 in
+           "NOK" | "nok")
+              f_message $1 "NOK" "Message" $TEMP_FILE $4
+           ;;
+           *)
+              f_message $1 "OK" "(use arrow keys to scroll up/down/side-ways)" $TEMP_FILE
+           ;;
+      esac
       #
-} # End of f_help_message.
+} # End of function f_display_common.
 #
 # +------------------------------+
 # |       Function f_message     |
@@ -672,7 +724,7 @@ f_message () {
                     f_msg_ui_file_ok $1 $2 "$3" "$4" $YBOX $XBOX
                  else
                     # Display contents of text file with a pause for n seconds.
-                    f_msg_ui_file_nok $1 $2 "$3" "$4" $YBOX $XBOX
+                    f_msg_ui_file_nok $1 $2 "$3" "$4" $YBOX $XBOX "$5"
                  fi
                  #
               else
@@ -915,7 +967,7 @@ f_msg_ui_file_ok () {
 # |  Function f_msg_ui_file_nok  |
 # +------------------------------+
 #
-#     Rev: 2020-06-03
+#     Rev: 2020-08-07
 #  Inputs: $1 - "text", "dialog" or "whiptail" The CLI GUI application in use.
 #          $2 - "OK"  [OK] button at end of text.
 #               "NOK" No [OK] button or "Press Enter key to continue"
@@ -925,6 +977,7 @@ f_msg_ui_file_ok () {
 #          $4 - Text string or text file.
 #          $5 - Box Height in characters.
 #          $6 - Box Width  in characters.
+#          $7 - Pause for $7 seconds to allow text to be read.
 #    Uses: None.
 # Outputs: ERROR. 
 #
@@ -949,10 +1002,21 @@ f_msg_ui_file_nok () {
               fi
               #
               # Dialog boxes "--msgbox" "--infobox" can use option --colors with "\Z" commands for font color bold/normal.
-              dialog --colors --title "$3" --textbox "$4" $Y $X
+              # Use --infobox to display text without an "OK" button.
+              # Convert text file to a string with "\n" (line feeds)
+              # because Dialog or Whiptail infobox needs a string for input.
+              STRING=$(sed 's/$/\\n/g' $4)
+              STRING=$(echo $STRING | sed 's/\\n /\\n/g')
+              dialog --colors --title "$3" --infobox "$STRING" $Y $X
+              #
+              if [ -z $7 ] ; then
+                 sleep 3
+              else
+                 sleep "$7"
+              fi
            ;;
            whiptail)
-              # Whiptail only has options --textbox or --msgbox (not --infobox).
+              # Whiptail only has options --textbox or--msgbox (not --infobox in earlier versions).
               # Whiptail does not have option "--colors" with "\Z" commands for font color bold/normal.
               #
               # Whiptail needs about 7 more lines for the header and [OK] button.
@@ -968,7 +1032,25 @@ f_msg_ui_file_nok () {
               if [ $X -ge $XSCREEN ] ; then
                  X=$XSCREEN
               fi
+              # Whiptail only has options --textbox or--msgbox (not --infobox in earlier versions).
+              # Therefore for earlier versions cannot use Whiptail --infobox for no "OK" button but must use --textbox instead.
+              # Uncomment line below for older versions of Whiptail lacking --infobox option.
               whiptail --title "$3" --textbox "$4" $Y $X
+              #
+              # Later versions of Whiptail have --infobox option.
+              #
+              # Use --infobox to display text without an "OK" button.
+              # Convert text file to a string with "\n" (line feeds)
+              # because Dialog or Whiptail infobox needs a string for input.
+              #STRING=$(sed 's/$/\\n/g' $4)
+              #STRING=$(echo $STRING | sed 's/\\n /\\n/g')
+              #whiptail --title "$3" --infobox "$STRING" $Y $X
+              #
+              #if [ -z $7 ] ; then
+              #   sleep 3
+              #else
+              #   sleep "$7"
+              #fi
            ;;
       esac
       #
@@ -1086,7 +1168,7 @@ f_msg_ui_str_ok () {
               dialog --colors --title "$3" --msgbox "$4" $Y $X
            ;;
            whiptail)
-              # Whiptail only has options --textbox or--msgbox (not --infobox).
+              # Whiptail only has options --textbox or--msgbox (not --infobox in earlier versions).
               # Whiptail does not have option "--colors" with "\Z" commands for font color bold/normal.
               #
               # Whiptail needs about 6 more lines for the header and [OK] button.
@@ -1160,7 +1242,7 @@ f_msg_ui_str_nok () {
               fi
            ;;
            whiptail)
-              # Whiptail only has options --textbox or--msgbox (not --infobox).
+              # Whiptail only has options --textbox or--msgbox (not --infobox in earlier versions).
               # Whiptail does not have option "--colors" with "\Z" commands for font color bold/normal.
               #
               # Whiptail needs about 6 more lines for the header and [OK] button.
@@ -1610,14 +1692,16 @@ f_edit_sharing_names () {
 # ***     Start of Main Program      ***
 # **************************************
 #
-#  Inputs:
-#    Uses:
-# Outputs:
+#     Rev: 2020-07-01
 #
-echo "***********************************************"
-echo "***  Running script github_repo_scripts.sh  ***"
-echo "***          Rev. $VERSION          ***"
-echo "***********************************************"
+if [ -e $TEMP_FILE ] ; then
+   rm $TEMP_FILE
+fi
+#
+clear  # Blank the screen.
+#
+echo "Running script $THIS_FILE"
+echo "***   Rev. $VERSION   ***"
 echo
 sleep 1  # pause for 1 second automatically.
 #
@@ -1637,6 +1721,9 @@ if [ -z $GUI ] ; then
    # Test for GUI (Whiptail or Dialog) or pure text environment.
    f_detect_ui
 fi
+#
+# Show About this script message.
+f_about $GUI "NOK" 5
 #
 #GUI="whiptail"  # Diagnostic line.
 #GUI="dialog"    # Diagnostic line.
