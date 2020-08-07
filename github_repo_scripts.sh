@@ -9,7 +9,7 @@
 # |        Default Variable Values         |
 # +----------------------------------------+
 #
-VERSION="2020-07-31 14:16"
+VERSION="2020-08-06 17:10"
 THIS_FILE="github_repo_scripts.sh"
 TEMP_FILE=$THIS_FILE"_temp.txt"
 #

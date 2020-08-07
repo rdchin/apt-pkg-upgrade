@@ -9,7 +9,7 @@
 # |        Default Variable Values         |
 # +----------------------------------------+
 #
-VERSION="2020-07-25 20:50"
+VERSION="2020-08-06 17:10"
 THIS_FILE="pkg-upgrade.sh"
 TEMP_FILE=$THIS_FILE"_temp.txt"
 #
@@ -55,6 +55,9 @@ TEMP_FILE=$THIS_FILE"_temp.txt"
 ## Code Change History
 ##
 ## (After each edit made, please update Code History and VERSION.)
+##
+## 2020-08-06 *f_obsolete_packages added checking for packages held back
+##             and display of applicable apt messages.
 ##
 ## 2020-07-25 *Main Program altered f_test_connection to have 1 s delay.
 ##
@@ -386,9 +389,18 @@ f_obsolete_packages () {
             #
             clear  # Blank the screen.
             #
-            sudo apt autoremove
-            f_press_enter_key_to_continue
+            sudo apt autoremove | tee $TEMP_FILE
+            # Display temporary file containing messages from apt command.
+            f_message $1 "OK" "Apt messages" $TEMP_FILE
          fi
+      fi
+      #
+      # Are there any software packages that were held back?
+      ANS=$(grep "held back" $2)
+      if [ -n "$ANS" ] ; then
+         # If $ANS is not zero length and contains the string "autoremove".
+         # Display temporary file containing messages from apt command.
+         f_message $1 "OK" "Apt messages" $2
       fi
       #
 } # End of function f_obsolete_packages
