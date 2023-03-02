@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# ©2021 Copyright 2021 Robert D. Chin
+# ©2022 Copyright 2022 Robert D. Chin
 # Email: RDevChin@Gmail.com
 #
 # Usage: bash pkg-upgrade.sh
@@ -30,7 +30,9 @@
 #
 #@@Exit#@@Exit this menu.#@@break
 #
-#@@Upgrade Operating System#@@Find and install latest software.#@@f_find_updates^$GUI
+#@@Update Operating System#@@Find and install latest software.#@@f_find_updates^$GUI
+#
+#@@Upgrade Operating System#@@Upgrade to the next version.#@@f_find_upgrade^$GUI
 #
 #@@About#@@Version information of this script.#@@f_about^$GUI
 #
@@ -44,7 +46,7 @@
 # |        Default Variable Values         |
 # +----------------------------------------+
 #
-VERSION="2021-04-01 01:57"
+VERSION="2023-02-24 17:29"
 THIS_FILE=$(basename $0)
 FILE_TO_COMPARE=$THIS_FILE
 TEMP_FILE=$THIS_FILE"_temp.txt"
@@ -63,20 +65,20 @@ GENERATED_FILE=$THIS_FILE"_menu_generated.lib"
 #
 # LAN File Server shared directory.
 # SERVER_DIR="[FILE_SERVER_DIRECTORY_NAME_GOES_HERE]"
-  SERVER_DIR="//file_server/public"
+  SERVER_DIR="//scotty/files"
 #
 # Local PC mount-point directory.
 # MP_DIR="[LOCAL_MOUNT-POINT_DIRECTORY_NAME_GOES_HERE]"
-  MP_DIR="/mnt/file_server/public"
+  MP_DIR="/mnt/scotty/files"
 #
 # Local PC mount-point with LAN File Server Local Repository full directory path.
-# Example: 
+# Example:
 #                   File server shared directory is "//file_server/public".
 # Repostory directory under the shared directory is "scripts/BASH/Repository".
 #                 Local PC Mount-point directory is "/mnt/file_server/public".
 #
 # LOCAL_REPO_DIR="$MP_DIR/[DIRECTORY_PATH_TO_LOCAL_REPOSITORY]"
-  LOCAL_REPO_DIR="$MP_DIR/scripts/BASH/Repository"
+  LOCAL_REPO_DIR="$MP_DIR/LIBRARY/PC-stuff/PC-software/BASH_Scripting_Projects/Repository"
 #
 #
 #=================================================================
@@ -96,7 +98,7 @@ GENERATED_FILE=$THIS_FILE"_menu_generated.lib"
 FILE_LIST=$THIS_FILE"_file_temp.txt"
 #
 # Format: [File Name]^[Local/Web]^[Local repository directory]^[web repository directory]
-echo "common_bash_function.lib^Web^$LOCAL_REPO_DIR^https://raw.githubusercontent.com/rdchin/BASH_function_library/master/" >> $FILE_LIST
+echo "common_bash_function.lib^Local^$LOCAL_REPO_DIR^https://raw.githubusercontent.com/rdchin/BASH_function_library/master/" >> $FILE_LIST
 #
 # Create a name for a temporary file which will have a list of files which need to be downloaded.
 FILE_DL_LIST=$THIS_FILE"_file_dl_temp.txt"
@@ -199,6 +201,50 @@ FILE_DL_LIST=$THIS_FILE"_file_dl_temp.txt"
 ##
 ## Includes changes to pkg-upgrade.sh.
 ##
+## 2023-02-24 *f_find_updates, f_ques_upgrade improve documentation.
+##
+## 2023-01-25 *f_ques_upgrade "View Software Package Descriptions?"
+##             changed default answer to "N".
+##
+## 2022-10-05 *f_menu_main improved comments.
+##            *f_ques_upgrade improved user messages.
+##
+## 2022-09-22 *f_ques_upgrade improved user messages, display the number of
+##             upgradeable packages before asking if user wants to view the
+##             package descriptions.
+##             (If there are many upgradeable packages, getting the
+##             descriptions may take a while to retrieve and download).
+##
+## 2022-05-08 *f_find_upgrade bug fixed in "apt dist-upgrade" command.
+##             Added user messages with status of dist-upgrade.
+##
+## 2022-05-03 *f_find_upgrade added to apt dist-upgrade.
+##
+## 2022-04-24 *f_ques_upgrade add comments to clarify temporay file usage.
+##
+## 2022-04-20 *fdl_download_missing_scripts fixed bug to prevent downloading
+##             from the remote repository if the local repository was
+##             unavailable and the script was only in the local repository.
+##
+## 2022-04-19 *f_list_packages changed display to show the package
+##              description before the changelog and prevented errors from
+##              being displayed when changelog could not be retrieved.
+##
+## 2022-04-18 *f_list_packages limited display of changelog to first 15
+##             lines of description.
+##
+## 2022-04-17 *f_list_packages bug fixed preventing aptitude from running
+##             even when installed, so command "aptitude changelog" was
+##             never run.
+##
+## 2022-04-10 *f_list_packages added aptitude to display changelog.
+##
+## 2022-03-18 *f_ques_upgrade added existence check for temporary file.
+##             This may have fixed bug with script intermittently
+##             quitting after displaying description page.
+##
+## 2021-09-06 *f_ques_upgrade added question to "apt dist-upgrade".
+##
 ## 2021-04-01 *Section "Code Notes" added. Improved comments.
 ##            *Updated to latest standards.
 ##            *Comment cleanup. Move the appended comments to start on the
@@ -214,10 +260,10 @@ FILE_DL_LIST=$THIS_FILE"_file_dl_temp.txt"
 ##            *Comment cleanup. Move the appended comments to start on the
 ##             previous line to improve readability.
 ##            *fdl_source bug ERROR not initialized fixed.
-##            *Section "Default Variable Values" defined FILE_TO_COMPARE and
-##             defined THIS_FILE=$(basename $0) to reduce maintenance.
-##            *fdl_download_missing_scripts added 2 arguments for file names
-##             as arguments.
+##            *Section "Default Variable Values" defined FILE_TO_COMPARE
+##             and defined THIS_FILE=$(basename $0) to reduce maintenance.
+##            *fdl_download_missing_scripts added 2 arguments for file
+##             names as arguments.
 ##            *fdl_download_missing_scripts, f_run_app, and application
 ##             functions changed to allow missing dependent scripts to be
 ##             automatically downloaded rather than simply displaying an
@@ -226,8 +272,8 @@ FILE_DL_LIST=$THIS_FILE"_file_dl_temp.txt"
 ##            *f_update_library, updated to latest standards.
 ##            *fdl_source added. f_source deleted.
 ##            *fdl_download_missing_scripts changed to use fdl_source.
-##            *Section "Main Menu", "Application Menu" changed the order of
-##             menu choices.
+##            *Section "Main Menu", "Application Menu" changed the order
+##             of menu choices.
 ##            *Section "Application Menu" added with in new library
 ##             men_module_apps.lib.
 ##            *Delete obsolete library men_module_download.lib.
@@ -239,8 +285,8 @@ FILE_DL_LIST=$THIS_FILE"_file_dl_temp.txt"
 ##            *f_choose_dl_source, f_choose_download_source deleted.
 ##            *Section "Code Change History" added instructions.
 ##            *fdl_download_missing_scripts added to modulize existing code
-##             under Section "Main Program" to allow easier deletion of code
-##             the "Update Version" feature is not desired.
+##             under Section "Main Program" to allow easier deletion of
+##             code.
 ##            *Functions related to "Update Version" renamed with an "fdl"
 ##             prefix to identify dependent functions to delete if that
 ##             function is not desired.
@@ -280,7 +326,8 @@ FILE_DL_LIST=$THIS_FILE"_file_dl_temp.txt"
 ##
 ## 2020-05-16 *Updated to latest standards.
 ##
-## 2020-05-06 *f_msg_ui_file_box_size, f_msg_ui_file_ok bug fixed in display.
+## 2020-05-06 *f_msg_ui_file_box_size, f_msg_ui_file_ok bug fixed
+##             in display.
 ##
 ## 2020-04-28 *Main updated to latest standards.
 ##
@@ -292,7 +339,7 @@ FILE_DL_LIST=$THIS_FILE"_file_dl_temp.txt"
 ## 2020-04-14 *f_ques_upgrade added command "apt autoremove".
 ##
 ## 2020-04-11 *f_message and messages throughout script rewritten
-##             for better compatibility between CLI, Dialog, Whiptail. 
+##             for better compatibility between CLI, Dialog, Whiptail.
 ##
 ## 2020-04-06 *f_arguments standardized.
 ##
@@ -324,13 +371,13 @@ FILE_DL_LIST=$THIS_FILE"_file_dl_temp.txt"
 ##            *Main Program move f_test_connection after f_arguments.
 ##            *f_arguments pattern matching adjusted.
 ##
-## 2019-03-31 *Main Program added f_help_message to beginning of Main Program. 
+## 2019-03-31 *Main Program added f_help_message to the beginning.
 ##
-## 2019-03-29 *f_arguments, f_code_history_txt, f_version_txt, f_help_message
-##             added actions for optional command arguments.
+## 2019-03-29 *f_arguments, f_code_history_txt, f_version_txt,
+##             f_help_message added actions for optional command arguments.
 ##            *f_script_path, f_press_enter_key_to_continue added.
 ##
-## 2019-03-28 *Adjusted displayed package descriptions format. 
+## 2019-03-28 *Adjusted displayed package descriptions format.
 ##            *Added message if there are no packages to update.
 ##            *If there are no packages to update, do not create a report.
 ##
@@ -417,7 +464,7 @@ f_display_common () {
 #
 # Summary: Check the version of a single, local file or script,
 #          FILE_TO_COMPARE with the version of repository file.
-#          If the repository file has latest version, then copy all 
+#          If the repository file has latest version, then copy all
 #          dependent files and libraries from the repository to local PC.
 #
 # TO DO enhancement: If local (LAN) repository is unavailable, then
@@ -437,21 +484,21 @@ f_check_version () {
       #
       # LAN File Server shared directory.
       # SERVER_DIR="[FILE_SERVER_DIRECTORY_NAME_GOES_HERE]"
-        SERVER_DIR="//file_server/public"
+        SERVER_DIR="//scotty/files"
       #
       # Local PC mount-point directory.
       # MP_DIR="[LOCAL_MOUNT-POINT_DIRECTORY_NAME_GOES_HERE]"
-        MP_DIR="/mnt/file_server/public"
+        MP_DIR="/mnt/scotty/files"
       #
       # Local PC mount-point with LAN File Server Local Repository full directory path.
-      # Example: 
+      # Example:
       #                   File server shared directory is "//file_server/public".
       # Repository directory under the shared directory is "scripts/BASH/Repository".
       #                 Local PC Mount-point directory is "/mnt/file_server/public".
       #
       # Local PC mount-point with LAN File Server Local Repository full directory path.
       # LOCAL_REPO_DIR="$MP_DIR/[DIRECTORY_PATH_TO_LOCAL_REPOSITORY]"
-        LOCAL_REPO_DIR="$MP_DIR/scripts/BASH/Repository"
+        LOCAL_REPO_DIR="$MP_DIR/LIBRARY/PC-stuff/PC-software/BASH_Scripting_Projects/Repository"
       #
       # Local PC file to be compared.
       if [ $# -eq 2 ] ; then
@@ -508,8 +555,9 @@ f_check_version () {
 #
 # Dependencies: f_menu_arrays, f_create_show_menu.
 #
-f_menu_main () { # Create and display the Main Menu.
+f_menu_main () {
       #
+      # Create and display the Main Menu.
       GENERATED_FILE=$THIS_DIR/$THIS_FILE"_menu_main_generated.lib"
       #
       # Does this file have menu items in the comment lines starting with "#@@"?
@@ -537,7 +585,7 @@ f_menu_main () { # Create and display the Main Menu.
          #
          # Specify library file name with menu item data.
          # ARRAY_FILE="[FILENAME_GOES_HERE]"
-           ARRAY_FILE="$THIS_DIR/dummy_file.sh"
+           ARRAY_FILE="$THIS_DIR/pkg_upgrade_dummy_file.lib"
       fi
       #
       # Create arrays from data.
@@ -797,7 +845,7 @@ fdl_source () {
 # Outputs: ANS.
 #
 # Summary: This function can be used when script is first run.
-#          It verifies that all dependencies are satisfied. 
+#          It verifies that all dependencies are satisfied.
 #          If any are missing, then any missing required dependencies of
 #          scripts and libraries are downloaded from a LAN repository or
 #          from a repository on the Internet.
@@ -806,7 +854,7 @@ fdl_source () {
 #          directory and then when it is executed or run, it will download
 #          automatically all other needed files and libraries, set them to be
 #          executable, and source the required libraries.
-#          
+#
 #          Cannot be dependent on "common_bash_function.lib" as this library
 #          may not yet be available and may need to be downloaded.
 #
@@ -824,7 +872,7 @@ fdl_download_missing_scripts () {
       # ****************************************************
       #
       # While-loop will read the file names listed in FILE_LIST (list of
-      # script and library files) and detect which are missing and need 
+      # script and library files) and detect which are missing and need
       # to be downloaded and then put those file names in FILE_DL_LIST.
       #
       while read LINE
@@ -877,7 +925,7 @@ fdl_download_missing_scripts () {
                   #
                   # If a file only found in the Local Repository has source changed
                   # to "Web" because LAN connectivity has failed, then do not download.
-                  if [ -z DL_REPOSITORY ] && [ $DL_SOURCE = "Web" ] ; then
+                  if [ -z $DL_REPOSITORY ] && [ $DL_SOURCE = "Web" ] ; then
                      ERROR=1
                   fi
                   #
@@ -892,7 +940,7 @@ fdl_download_missing_scripts () {
                              # So download from Web Repository.
                              fdl_dwnld_file_from_web_site $DL_REPOSITORY $DL_FILE
                           else
-                             # Sucessful mount of LAN File Server directory. 
+                             # Sucessful mount of LAN File Server directory.
                              # Continue with download from Local Repository on LAN File Server.
                              fdl_dwnld_file_from_local_repository $TARGET_DIR $DL_FILE
                              #
@@ -967,6 +1015,47 @@ fdl_download_missing_scripts () {
 } # End of function fdl_download_missing_scripts.
 #
 # +------------------------------------+
+# |      Function f_find_upgrade       |
+# +------------------------------------+
+#
+#  Inputs: $1=GUI.
+#          TEMP_FILE Temporary file.
+#    Uses: None.
+# Outputs: File $TEMP_FILE.
+#
+# Summary: Update the Operating System using "apt update", "apt upgrade.
+#
+# Dependencies: apt, f_message, f_ques_upgrade, f_bad_sudo_password.
+#
+f_find_upgrade () {
+      #
+      f_test_connection $1 8.8.8.8 1
+      #
+      if [ $ERROR -eq 0 ] ; then
+         #
+         # Run a sudo command to catch bad sudo passwords.
+         sudo --validate
+         ERROR=$?
+         #
+         if [ $ERROR -eq 0 ] ; then
+            #
+            # Find latest updates to packages.
+            f_message $1 "NOK" "Searching for a Software Upgrade" "\nUsing command 'apt dist-update'\nto find latest upgrade.\n\nPlease be patient."
+            #
+            echo "Searching for a Software Upgrade" "Using command 'apt dist-update' to find latest upgrade." > $TEMP_FILE
+            echo >> $TEMP_FILE
+            sudo apt dist-upgrade >> $TEMP_FILE 2>/dev/null
+            echo >> $TEMP_FILE
+            echo "Finished detecting and installing any new version upgrades to the Desktop." >> $TEMP_FILE
+            f_message $1 "OK" "Finished with New Version Upgrades" $TEMP_FILE
+         else
+            f_bad_sudo_password $GUI
+         fi
+      fi
+      #
+} # End of function f_find_upgrade.
+#
+# +------------------------------------+
 # |      Function f_find_updates       |
 # +------------------------------------+
 #
@@ -992,9 +1081,51 @@ f_find_updates () {
          if [ $ERROR -eq 0 ] ; then
             #
             # Find latest updates to packages.
-            f_message $GUI "NOK" "Searching for Software Updates" "Using command 'apt update' to find latest updates. Please be patient."
+            f_message $GUI "NOK" "Searching for Software Updates" "\nUsing command 'apt update' to find latest updates. Please be patient."
             #
             sudo apt update > $TEMP_FILE 2>/dev/null
+            # 
+            #-----------------------------------------------------------
+            #
+            # Output of "apt update" command. (apt version 2.0.9.)
+            #
+            # Hit:1 http://ubuntu.mirror.constant.com focal InRelease
+            #  ...
+            # Hit:10 https://mirrors.seas.harvard.edu/linuxmint-packages una Release
+            # Fetched 114 kB in 3s (41.6 kB/s)
+            # Reading package lists... Done
+            # Building dependency tree       
+            # Reading state information... Done
+            # 3 packages can be upgraded. Run 'apt list --upgradable' to see them.
+            #
+            #-----------------------------------------------------------
+            #
+            # In this example, the current version of apt is found using
+            # the command "apt list apt".
+            #
+            # Output of "apt list apt" command.
+            # Listing... Done
+            # apt/focal-updates,now 2.0.9 amd64 [installed]
+            # apt/focal-updates 2.0.9 i386
+            #
+            #-----------------------------------------------------------
+            #
+            # (See also "apt-get --simulate upgrade")
+            # Output of "apt-get  --simulate upgrade command.
+            #
+            # NOTE: This is only a simulation!
+            # apt-get needs root privileges for real execution.
+            # Keep also in mind that locking is deactivated,
+            # so don't depend on the relevance to the real current situation!
+            # Reading package lists... Done
+            # Building dependency tree       
+            # Reading state information... Done
+            # Calculating upgrade... Done
+            # The following packages have been kept back:
+            # libvkd3d1 libvkd3d1:i386
+            # 0 upgraded, 0 newly installed, 0 to remove and 2 not upgraded.
+            # 
+            #-----------------------------------------------------------
             #
             # If updates exist, do you want to see package descriptions?
             # And do you want to upgrade the packages?
@@ -1012,7 +1143,7 @@ f_find_updates () {
 # +------------------------------------+
 #
 #  Inputs: $1=GUI.
-#          #2=Temporary file.
+#          #2=Temporary file containing output from "sudo apt update".
 #    Uses: None.
 # Outputs: File $TEMP_FILE.
 #
@@ -1022,12 +1153,34 @@ f_find_updates () {
 #
 f_ques_upgrade () {
       #
+      # Temporary file contains output from "sudo apt update".
       # Read the last line in the file $TEMP_FILE.
-      X=$(tail -n 1 $2)
+      XSTR=$(tail -n 1 $2)
+      # 
+      #-----------------------------------------------------------
       #
-      if [ "$X" = "All packages are up to date." ] ; then
+      # Output of tail -n 1 $2 from the example in f_find_updates.
+      #
+      # If updates are available:
+      # 3 packages can be upgraded. Run 'apt list --upgradable' to see them.
+      # 
+      #-----------------------------------------------------------
+      #
+      # If no updates are available:
+      # 0 upgraded, 0 newly installed, 0 to remove and 0 not upgraded.
+      # 
+      #-----------------------------------------------------------
+      #
+      # If no updates are available:
+      # All packages are up to date.
+      # 
+      #-----------------------------------------------------------
+      #
+      # Are software packages up to date?
+      if [ "$XSTR" = "All packages are up to date." ] ; then
+         # Yes, software packages are up to date.
          #
-         f_message $1 "OK" "Status of Software Packages" "All software packages are at the latest version."
+         f_message $1 "OK" "Status of Software Packages" "\nAll software packages are at the latest version."
          #
          # Clean up temporary files before running "sudo apt upgrade".
          # If you quit out of "sudo apt upgrade", then execution terminates
@@ -1036,14 +1189,19 @@ f_ques_upgrade () {
             rm $TEMP_FILE
          fi
          #
-         # In some versions of apt, the string "autoremove" (to remove
-         # obsolete packages) appears after "apt update" command, but in the
-         # newer versions of apt, the string appears only after the command
-         # "apt upgrade" is given.
+         #-----------------------------------------------------------
          #
-         # So even though there are no packages to upgrade, give the command
-         # "apt upgrade to detect any obsolete packages to remove.
-         f_message $1 "NOK" "Checking for obsolete Software Packages" "Running command: \"sudo apt upgrade\"\nto check for obsolete software packages." 3
+         # In some versions of apt, the string "autoremove" (to remove
+         # obsolete packages) appears after "apt update" command, but
+         # in the newer versions of apt, the string appears only after
+         # the command "apt upgrade" is given.
+         #
+         # So even though there are no packages to upgrade, give the
+         # command "apt upgrade to detect any obsolete packages to remove.
+         #
+         #-----------------------------------------------------------
+         #
+         f_message $1 "NOK" "Checking for obsolete Software Packages" "\nRunning command: \"sudo apt upgrade\"\nto check for obsolete software packages." 3
          #
          clear  # Blank the screen.
          #
@@ -1053,16 +1211,30 @@ f_ques_upgrade () {
          sudo apt upgrade > $2 2>/dev/null
          f_obsolete_packages $1 $2
       else
-         # Yes/No Question.
-         f_yn_question $1 "Y" "View Software Package Descriptions?" " \nSome software packages are not up-to-date and need upgrading.\n \nNote: There may be a delay to display descriptions.\n      (especially if many software packages need to be updated)\n \nDo you want to view software package descriptions?"
+         # Software packages need to be updated.
+         #
+         XSTR=$(echo $XSTR | awk -F "." '{ print $1"." }')
+         NUM_PKGS=$(echo $XSTR | awk '{ print $1 }')
+         #
+         f_yn_question $1 "N" "View Software Package Descriptions?" " \n$XSTR\n\nThere may be a delay to display descriptions.\n\n(especially if many software packages need to be updated)\n \nDo you want to view the descriptions of the $NUM_PKGS software package(s)?"
+         #
+         # Throw out temporary variables.
+         unset XSTR NUM_PKGS
+         #
          # ANS=0 when <Yes> button pressed.
          # ANS=1 when <No> button pressed.
          #
          # if <Yes> button pressed, then list packages.
          if [ $ANS -eq 0 ] ; then
+            #
+            # Blank the screen.
+            clear
+            #
+            # Display a list of upgradeable packages.
             f_list_packages
          fi
-         f_message $1 "NOK" "Upgrade Software Packages" "Running command: \"sudo apt upgrade\" to upgrade software packages."
+         #
+         f_message $1 "NOK" "Upgrade Software Packages" "\nRunning command: \"sudo apt upgrade\" to upgrade software packages."
          #
          clear  # Blank the screen.
          #
@@ -1070,14 +1242,43 @@ f_ques_upgrade () {
          # If you quit out of "sudo apt upgrade", then execution terminates
          # within this function and never goes back to Main.
          TEMP_FILE=$THIS_FILE"_temp.txt"
+         #
+         # Delete temporary file.
          if [ -e $TEMP_FILE ] ; then
             rm $TEMP_FILE
          fi
+         #
+         # Get any package upgrades.
          sudo apt upgrade | tee $TEMP_FILE
+         #
+         # Find any obsolete packages and delete them.
          f_obsolete_packages $1 $TEMP_FILE
+         #
+         # If packages are held back then have the option to "apt dist-upgrade".
+         if [ -e $TEMP_FILE ] ; then
+            # TEMP_FILE exists, so test it for any packages held back.
+            ANS=$(grep --count "The following packages have been kept back" $TEMP_FILE)
+         else
+            # TEMP_FILE does not exist, so set ANS to zero (no packages held back).
+            ANS=0
+         fi
+         #
+         if [ $ANS -neq 0 ] ; then
+            # Yes/No Question.
+            f_yn_question $1 "Y" "Upgrade Linux distribution packages to new version?" "\nSome software packages are held back due to new version.\n \nRun \"apt dist-upgrade\"?"
+            # ANS=0 when <Yes> button pressed.
+            # ANS=1 when <No> button pressed.
+            #
+            if [ $ANS -eq 0 ] ; then
+               # if <Yes> button pressed, then upgrade distribution.
+               sudo apt dist-upgrade
+            fi
+            #
+         fi
          #
          TEMP_FILE=$THIS_FILE"_temp.txt"
          if [ -e $TEMP_FILE ] ; then
+            # Delete temp file.
             rm $TEMP_FILE
          fi
       fi
@@ -1096,7 +1297,7 @@ f_ques_upgrade () {
 #
 # Summary: Display a list of upgradable software packages.
 #
-# Dependencies: apt, f_message.
+# Dependencies: apt, aptitude, f_message.
 #
 f_list_packages () {
       #
@@ -1120,21 +1321,44 @@ f_list_packages () {
       # If tmp file has data (list of packages to be updated).
       if [ -s $TEMP_FILE ] ; then
          #
-         # Create file $TEMP_FILE2 to contain package name and short description.
+         # Is application aptitude installed?
+         # Use "command" to determine.
+         #command -v aptitude >/dev/null
+         # ERROR=$?
          #
+         # Is application aptitude installed?
+         # Use "type" to determine.
+         type aptitude >/dev/null 2>&1
+         ERROR=$?
+         #
+         # ERROR=0 Aptitude is installed.
+         # ERROR=1 Aptitude is not installed.
+         # "&>/dev/null" does not work in Debian distro.
+         # 1=standard messages, 2=error messages, &=both.
+         #
+         # Create file $TEMP_FILE2 to contain package name and short description.
          TITLE="***Description of upgradable packages***"
          echo $TITLE > $TEMP_FILE2
          #
-         # Extract the "Description" from the raw data output from command "apt-cache show <pkg name>". 
+         # Extract the "Description" from the raw data output from command "apt-cache show <pkg name>".
          # Read the file uplist.tmp.
          while read XSTR
          do
+               # grep all package description text between strings "Description" and "Description-md5".
                echo >> $TEMP_FILE2
                echo "---------------------------" >> $TEMP_FILE2
+               echo >> $TEMP_FILE2
                echo $XSTR >> $TEMP_FILE2
-               #
-               # grep all package description text between strings "Description" and "Description-md5".
+               echo >> $TEMP_FILE2
                apt-cache show $XSTR | grep Description --max-count=1 --after-context=99 | grep Description-md5 --max-count=1 --before-context=99 | sed 's/^Description-md5.*$//'>> $TEMP_FILE2
+               # Is Aptitude installed?
+               if [ $ERROR -eq 0 ] ; then
+                  # Yes, so use application aptitude to display changelog.
+                  echo >> $TEMP_FILE2
+                  echo "Retrieving changelog for $XSTR."
+                  # Get changelog via Aptitude app and redirect error messages so they do not display.
+                  aptitude changelog $XSTR  2>/dev/null | head -n 20 >> $TEMP_FILE2
+               fi
          done < $TEMP_FILE
          #
          f_message $GUI "OK" "Package Description" $TEMP_FILE2
@@ -1164,7 +1388,7 @@ f_obsolete_packages () {
       # appears after "apt update" but in the newer versions of apt,
       # the string appears only after command "apt upgrade" is given.
       #
-      # Prerequisite: 
+      # Prerequisite:
       # The command "apt upgrade" must be given before calling this function.
       # i.e. Command format:  "sudo apt upgrade | tee $TEMP_FILE".
       #                       "f_obsolete_packages $GUI $TEMP_FILE".
@@ -1324,11 +1548,11 @@ if [ -e $TEMP_FILE ] ; then
 fi
 #
 if [ -e  $FILE_LIST ] ; then
-   rm  $FILE_LIST
+   rm $FILE_LIST
 fi
 #
 if [ -e  $FILE_DL_LIST ] ; then
-   rm  $FILE_DL_LIST
+   rm $FILE_DL_LIST
 fi
 #
 # Nicer ending especially if you chose custom colors for this script.
