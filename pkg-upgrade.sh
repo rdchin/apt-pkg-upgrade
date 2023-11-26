@@ -46,7 +46,7 @@
 # |        Default Variable Values         |
 # +----------------------------------------+
 #
-VERSION="2023-02-24 17:29"
+VERSION="2023-03-22 08:42"
 THIS_FILE=$(basename $0)
 FILE_TO_COMPARE=$THIS_FILE
 TEMP_FILE=$THIS_FILE"_temp.txt"
@@ -200,6 +200,9 @@ FILE_DL_LIST=$THIS_FILE"_file_dl_temp.txt"
 ## (After each edit made, please update Code History and VERSION.)
 ##
 ## Includes changes to pkg-upgrade.sh.
+##
+## 2023-03-22 *f_ques_upgrade_gui bug fixed to display results of "apt update"
+##             and "apt upgrade".
 ##
 ## 2023-02-24 *f_find_updates, f_ques_upgrade improve documentation.
 ##
@@ -1084,7 +1087,7 @@ f_find_updates () {
             f_message $GUI "NOK" "Searching for Software Updates" "\nUsing command 'apt update' to find latest updates. Please be patient."
             #
             sudo apt update > $TEMP_FILE 2>/dev/null
-            # 
+            #
             #-----------------------------------------------------------
             #
             # Output of "apt update" command. (apt version 2.0.9.)
@@ -1094,7 +1097,7 @@ f_find_updates () {
             # Hit:10 https://mirrors.seas.harvard.edu/linuxmint-packages una Release
             # Fetched 114 kB in 3s (41.6 kB/s)
             # Reading package lists... Done
-            # Building dependency tree       
+            # Building dependency tree
             # Reading state information... Done
             # 3 packages can be upgraded. Run 'apt list --upgradable' to see them.
             #
@@ -1118,13 +1121,13 @@ f_find_updates () {
             # Keep also in mind that locking is deactivated,
             # so don't depend on the relevance to the real current situation!
             # Reading package lists... Done
-            # Building dependency tree       
+            # Building dependency tree
             # Reading state information... Done
             # Calculating upgrade... Done
             # The following packages have been kept back:
             # libvkd3d1 libvkd3d1:i386
             # 0 upgraded, 0 newly installed, 0 to remove and 2 not upgraded.
-            # 
+            #
             #-----------------------------------------------------------
             #
             # If updates exist, do you want to see package descriptions?
@@ -1156,24 +1159,24 @@ f_ques_upgrade () {
       # Temporary file contains output from "sudo apt update".
       # Read the last line in the file $TEMP_FILE.
       XSTR=$(tail -n 1 $2)
-      # 
+      #
       #-----------------------------------------------------------
       #
       # Output of tail -n 1 $2 from the example in f_find_updates.
       #
       # If updates are available:
       # 3 packages can be upgraded. Run 'apt list --upgradable' to see them.
-      # 
+      #
       #-----------------------------------------------------------
       #
       # If no updates are available:
       # 0 upgraded, 0 newly installed, 0 to remove and 0 not upgraded.
-      # 
+      #
       #-----------------------------------------------------------
       #
       # If no updates are available:
       # All packages are up to date.
-      # 
+      #
       #-----------------------------------------------------------
       #
       # Are software packages up to date?
@@ -1251,6 +1254,20 @@ f_ques_upgrade () {
          # Get any package upgrades.
          sudo apt upgrade | tee $TEMP_FILE
          #
+         # Copy $TEMP_FILE temp file to $TEMP_FILE"2.txt" because f_message below
+         # deletes the temp file and want to keep $TEMP_FILE
+         # since f_obsolete_packages needs to read it.
+         cp $TEMP_FILE $TEMP_FILE"2.txt"
+         #
+         # Blank the screen.
+         clear
+         f_message $1 "OK" "apt upgrade Results" $TEMP_FILE"2.txt"
+         #
+         # Delete temporary file.
+         if [ -e $TEMP_FILE"2.txt" ] ; then
+            rm $TEMP_FILE"2.txt"
+         fi
+         #
          # Find any obsolete packages and delete them.
          f_obsolete_packages $1 $TEMP_FILE
          #
@@ -1263,7 +1280,7 @@ f_ques_upgrade () {
             ANS=0
          fi
          #
-         if [ $ANS -neq 0 ] ; then
+         if [ $ANS -ne 0 ] ; then
             # Yes/No Question.
             f_yn_question $1 "Y" "Upgrade Linux distribution packages to new version?" "\nSome software packages are held back due to new version.\n \nRun \"apt dist-upgrade\"?"
             # ANS=0 when <Yes> button pressed.
@@ -1271,7 +1288,11 @@ f_ques_upgrade () {
             #
             if [ $ANS -eq 0 ] ; then
                # if <Yes> button pressed, then upgrade distribution.
-               sudo apt dist-upgrade
+               sudo apt dist-upgrade | tee $TEMP_FILE
+               #
+               # Blank the screen.
+               clear
+               f_message $1 "OK" "dist-upgrade Results" $TEMP_FILE
             fi
             #
          fi
@@ -1416,7 +1437,7 @@ f_obsolete_packages () {
       # Are there any software packages that were held back?
       ANS=$(grep "held back" $2)
       if [ -n "$ANS" ] ; then
-         # If $ANS is not zero length and contains the string "autoremove".
+         # If $ANS is not zero length and contains the string "held back".
          # Display temporary file containing messages from apt command.
          f_message $1 "OK" "Apt messages" $2
       fi
