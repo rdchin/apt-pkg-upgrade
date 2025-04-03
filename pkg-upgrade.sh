@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# ©2022 Copyright 2022 Robert D. Chin
+# ©2024 Copyright 2024 Robert D. Chin
 # Email: RDevChin@Gmail.com
 #
 # Usage: bash pkg-upgrade.sh
@@ -20,33 +20,11 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program. If not, see <https://www.gnu.org/licenses/>.
 #
-# +--------------------------------------------------------------------------+
-# |                                                                          |
-# |                 Customize Menu choice options below.                     |
-# |                                                                          |
-# +--------------------------------------------------------------------------+
-#
-# Format: <#@@> <Menu Option> <#@@> <Description of Menu Option> <#@@> <Corresponding function or action or cammand>
-#
-#@@Exit#@@Exit this menu.#@@break
-#
-#@@Update Operating System#@@Find and install latest software.#@@f_find_updates^$GUI
-#
-#@@Upgrade Operating System#@@Upgrade to the next version.#@@f_find_upgrade^$GUI
-#
-#@@About#@@Version information of this script.#@@f_about^$GUI
-#
-#@@Code History#@@Display code change history of this script.#@@f_code_history^$GUI
-#
-#@@Version Update#@@Check for updates to this script and download.#@@f_check_version^$GUI
-#
-#@@Help#@@Display help message.#@@f_help_message^$GUI
-#
 # +----------------------------------------+
 # |        Default Variable Values         |
 # +----------------------------------------+
 #
-VERSION="2023-03-22 08:42"
+VERSION="2024-06-08 23:54"
 THIS_FILE=$(basename $0)
 FILE_TO_COMPARE=$THIS_FILE
 TEMP_FILE=$THIS_FILE"_temp.txt"
@@ -200,6 +178,13 @@ FILE_DL_LIST=$THIS_FILE"_file_dl_temp.txt"
 ## (After each edit made, please update Code History and VERSION.)
 ##
 ## Includes changes to pkg-upgrade.sh.
+##
+## 2024-06-08 *f_check_version, f_display_common, fdl_mount_local,
+##             fdl_dwnld_file_from_web_site,
+##             fdl_dwnld_file_from_local_repository,
+##             fdl_download_missing_scripts were updated to latest version.
+##            *f_menu_main deleted and replaced by f_menu_main_all_menus.
+##            *f_menu_main_all_menus added.
 ##
 ## 2023-03-22 *f_ques_upgrade_gui bug fixed to display results of "apt update"
 ##             and "apt upgrade".
@@ -388,15 +373,66 @@ FILE_DL_LIST=$THIS_FILE"_file_dl_temp.txt"
 ##
 ## 2019-03-24 *Initial release.
 #
+# +--------------------------------------------------------------------------+
+# |                                                                          |
+# |                 Customize Menu choice options below.                     |
+# |                                                                          |
+# +--------------------------------------------------------------------------+
+#
+#                 >>> !!!Warning!!! <<<
+#
+# The Menu Item Descriptions cannot have semi-colons, colons, asterisks,
+# single-quotes (apostrophes), double-quotes, ampersands, greater-than
+# and less-than signs.
+#
+# Forbidden characters include ; : * ' " & > < \
+#
+# These characters will compromise the creation of arrays which
+# in turn creates the menu.
+#
+# Note: The single-quotes (') and double-quotes (") and back-slashes (\)
+#       are ignored when the arrays are created, even if they are included
+#       in the Menu Item Description.
+#
+# General Format: <#@@> <Menu Option> <#@@> <Description of Menu Option> <#@@> <Corresponding function or action or command>
+#
+# Format of <Corresponding function or action or command> when using f_menu_main_all_menus.
+#        f_menu_main_all_menus^"text", "dialog", or "whiptail"^Menu Name^Library name containing menu entries
+#
+#! +--------------------------------------------------------------+
+#! | Start Listing Upgrade Menu                                   |
+#! |               (Required header, do not delete).              |
+#! +--------------------------------------------------------------+
+#
+#@@Exit#@@Exit this menu.#@@break
+#
+#@@Update Operating System#@@Find and install latest software.#@@f_find_updates^$GUI
+#
+#@@Upgrade Operating System#@@Upgrade to the next version.#@@f_find_upgrade^$GUI
+#
+#@@About#@@Version information of this script.#@@f_about^$GUI
+#
+#@@Code History#@@Display code change history of this script.#@@f_code_history^$GUI
+#
+#@@Version Update#@@Check for updates to this script and download.#@@f_check_version^$GUI
+#
+#@@Help#@@Display help message.#@@f_help_message^$GUI
+#
+#! End Listing Upgrade Menu (Required line, do not delete).
+#
 # +------------------------------------+
 # |     Function f_display_common      |
 # +------------------------------------+
 #
-#     Rev: 2021-03-31
-#  Inputs: $1=UI - "text", "dialog" or "whiptail" the preferred user-interface.
-#          $2=Delimiter of text to be displayed.
-#          $3="NOK", "OK", or null [OPTIONAL] to control display of "OK" button.
-#          $4=Pause $4 seconds [OPTIONAL]. If "NOK" then pause to allow text to be read.
+#     Rev: 2024-02-24
+#  Inputs: $1 - "text", "dialog" or "whiptail" the command-line user-interface in use.
+#          $2 - Delimiter of text to be displayed.
+#          $3 - [OPTIONAL] to control display of prompt to continue.
+#                          null (Default) - "OK" button or text prompt, display until either Enter key or "OK" button is pressed.
+#                          "OK"           - "OK" button or text prompt, display until either Enter key or "OK" button is pressed.
+#                          "NOK"          - No "OK" button or text prompt, display for $3 seconds before continuing automatically.
+#          $4 - [OPTIONAL] to control pause duration. Only used if $3="NOK".
+#                          $4 seconds pause to allow text to be read before continuing automatically.
 #          THIS_DIR, THIS_FILE, VERSION.
 #    Uses: X.
 # Outputs: None.
@@ -404,6 +440,10 @@ FILE_DL_LIST=$THIS_FILE"_file_dl_temp.txt"
 # Summary: Display lines of text beginning with a given comment delimiter.
 #
 # Dependencies: f_message.
+#
+# PLEASE NOTE: RENAME THIS FUNCTION WITHOUT SUFFIX "_TEMPLATE" AND COPY
+#              THIS FUNCTION INTO ANY SCRIPT WHICH DEPENDS ON THE
+#              LIBRARY FILE "common_bash_function.lib".
 #
 f_display_common () {
       #
@@ -458,11 +498,15 @@ f_display_common () {
 # |        Function f_check_version        |
 # +----------------------------------------+
 #
-#     Rev: 2021-03-25
-#  Inputs: $1 - UI "dialog" or "whiptail" or "text".
+#     Rev: 2024-02-22
+#  Inputs: $1 - "text", "dialog" or "whiptail" the command-line user-interface in use.
 #          $2 - [OPTIONAL] File name to compare.
+#          $3 - [OPTIONAL] to control display of messages and interactive user questions.
+#                          null (default) - Display error and status messages and interactive user questions.
+#                          1              - Display error messages only (Silent mode).
 #          FILE_TO_COMPARE.
-#    Uses: SERVER_DIR, MP_DIR, TARGET_DIR, TARGET_FILE, VERSION, TEMP_FILE, ERROR.
+#    Uses: SERVER_DIR, MP_DIR, LOCAL_REPO_DIR, $FILE_TO_COMPARE, FILE_LIST,
+#          VERSION, TEMP_FILE, ERROR.
 # Outputs: ERROR.
 #
 # Summary: Check the version of a single, local file or script,
@@ -474,6 +518,10 @@ f_display_common () {
 #          connect to repository on the web if available.
 #
 # Dependencies: f_version_compare.
+#
+# PLEASE NOTE: RENAME THIS FUNCTION WITHOUT SUFFIX "_TEMPLATE" AND COPY
+#              THIS FUNCTION INTO ANY SCRIPT WHICH DEPENDS ON THE
+#              LIBRARY FILE "common_bash_function.lib".
 #
 f_check_version () {
       #
@@ -487,11 +535,15 @@ f_check_version () {
       #
       # LAN File Server shared directory.
       # SERVER_DIR="[FILE_SERVER_DIRECTORY_NAME_GOES_HERE]"
-        SERVER_DIR="//scotty/files"
+      if [ -z "$SERVER_DIR" ] ; then
+        SERVER_DIR="//scotty//files"
+      fi
       #
       # Local PC mount-point directory.
       # MP_DIR="[LOCAL_MOUNT-POINT_DIRECTORY_NAME_GOES_HERE]"
+      if [ -z "$MP_DIR" ] ; then
         MP_DIR="/mnt/scotty/files"
+      fi
       #
       # Local PC mount-point with LAN File Server Local Repository full directory path.
       # Example:
@@ -501,7 +553,9 @@ f_check_version () {
       #
       # Local PC mount-point with LAN File Server Local Repository full directory path.
       # LOCAL_REPO_DIR="$MP_DIR/[DIRECTORY_PATH_TO_LOCAL_REPOSITORY]"
+      if [ -z "$LOCAL_REPO_DIR" ] ; then
         LOCAL_REPO_DIR="$MP_DIR/LIBRARY/PC-stuff/PC-software/BASH_Scripting_Projects/Repository"
+      fi
       #
       # Local PC file to be compared.
       if [ $# -eq 2 ] ; then
@@ -519,8 +573,18 @@ f_check_version () {
       # Version of Local PC file to be compared.
       VERSION=$(grep --max-count=1 "VERSION" $FILE_TO_COMPARE)
       #
+      # Initialize variables.
       FILE_LIST=$THIS_DIR/$THIS_FILE"_file_temp.txt"
       ERROR=0
+      #
+      # Delete any existing file.
+      # This assures that FILE_LIST is not appended to but is newly created
+      # in the code below. Added because typo may occur when using redirection
+      # where typo ">>" is used instead of ">" at FILE NAME1.
+      # i.e. typo at echo "[ FILE NAME1 GOES HERE ]"  >> $FILE_LIST
+      if [ -e $FILE_LIST ] ; then
+         rm $FILE_LIST
+      fi
       #
       #
       #=================================================================
@@ -534,98 +598,161 @@ f_check_version () {
       echo "pkg-upgrade.sh"            > $FILE_LIST  # <<<--- INSERT ACTUAL FILE NAME HERE.
       echo "common_bash_function.lib" >> $FILE_LIST  # <<<--- INSERT ACTUAL FILE NAME HERE.
       #
-      f_version_compare $1 $SERVER_DIR $MP_DIR $LOCAL_REPO_DIR $FILE_TO_COMPARE "$VERSION" $FILE_LIST
+      f_version_compare $1 "$SERVER_DIR" "$MP_DIR" "$LOCAL_REPO_DIR" "$FILE_TO_COMPARE" "$VERSION" "$FILE_LIST" "$3"
       #
       if [ -r  $FILE_LIST ] ; then
          rm  $FILE_LIST
       fi
       #
+      unset FILE_LIST
+      #
 }  # End of function f_check_version.
 #
-# +----------------------------------------+
-# |          Function f_menu_main          |
-# +----------------------------------------+
+# +-----------------------------------------+
+# | Function f_menu_main_all_menus          |
+# +-----------------------------------------+
 #
-#     Rev: 2021-03-07
+#     Rev: 2024-02-18
 #  Inputs: $1 - "text", "dialog" or "whiptail" the preferred user-interface.
-#    Uses: ARRAY_FILE, GENERATED_FILE, MENU_TITLE.
+#          $2 - MENU_TITLE Title of menu which must also match the header
+#               and tail strings for the menu data in the ARRAY_SOURCE_FILE.
+#              !!!Menu title MUST use underscores instead of spaces!!!
+#          $3 - ARRAY_SOURCE_FILE is the file name where the menu data is stored.
+#               This can be the run-time script or a separate *.lib library file.
+#    Uses: ARRAY_SOURCE_FILE, ARRAY_TEMP_FILE, GENERATED_FILE, MENU_TITLE, TEMP_FILE.
 # Outputs: None.
 #
-# Summary: Display Main-Menu.
-#          This Main Menu function checks its script for the Main Menu
-#          options delimited by "#@@" and if it does not find any, then
-#          it it defaults to the specified library script.
+# Summary: Display any menu. Use this same function to display
+#          both Main-Menu and any sub-menus. The Main Menu and all sub-menu data
+#          may either be in the run-time script (*.sh) or a separate library (*.lib)
+#
+#          A single script/library file contains data for multiple menus
+#          where there may be 1 or more menus within 1 file.
+#
+#          Simply state the Path/Filename of the library file, ARRAY_SOURCE_FILE
+#          which contains the menu data.
 #
 # Dependencies: f_menu_arrays, f_create_show_menu.
 #
-f_menu_main () {
+# PLEASE NOTE: RENAME THIS FUNCTION WITHOUT SUFFIX "_TEMPLATE" AND COPY
+#              THIS FUNCTION INTO THE MAIN SCRIPT WHICH WILL CALL IT.
+#
+f_menu_main_all_menus () {
       #
-      # Create and display the Main Menu.
-      GENERATED_FILE=$THIS_DIR/$THIS_FILE"_menu_main_generated.lib"
       #
-      # Does this file have menu items in the comment lines starting with "#@@"?
-      grep --silent ^\#@@ $THIS_DIR/$THIS_FILE
-      ERROR=$?
-      # exit code 0 - menu items in this file.
-      #           1 - no menu items in this file.
-      #               file name of file containing menu items must be specified.
-      if [ $ERROR -eq 0 ] ; then
-         # Extract menu items from this file and insert them into the Generated file.
-         # This is required because f_menu_arrays cannot read this file directly without
-         # going into an infinite loop.
-         grep ^\#@@ $THIS_DIR/$THIS_FILE >$GENERATED_FILE
-         #
-         # Specify file name with menu item data.
-         ARRAY_FILE="$GENERATED_FILE"
-      else
-         #
-         #
-         #================================================================================
-         # EDIT THE LINE BELOW TO DEFINE $ARRAY_FILE AS THE ACTUAL FILE NAME (LIBRARY)
-         # WHERE THE MENU ITEM DATA IS LOCATED. THE LINES OF DATA ARE PREFIXED BY "#@@".
-         #================================================================================
-         #
-         #
-         # Specify library file name with menu item data.
-         # ARRAY_FILE="[FILENAME_GOES_HERE]"
-           ARRAY_FILE="$THIS_DIR/pkg_upgrade_dummy_file.lib"
-      fi
+      #================================================================================
+      # EDIT THE LINE BELOW TO DEFINE $ARRAY_SOURCE_FILE AS THE ACTUAL FILE NAME
+      # WHERE THE MENU ITEM DATA IS LOCATED. THE LINES OF DATA ARE PREFIXED BY "#@@".
+      #================================================================================
       #
-      # Create arrays from data.
-      f_menu_arrays $ARRAY_FILE
       #
-      # Calculate longest line length to find maximum menu width
-      # for Dialog or Whiptail using lengths calculated by f_menu_arrays.
-      let MAX_LENGTH=$MAX_CHOICE_LENGTH+$MAX_SUMMARY_LENGTH
+      # Note: Alternate menu data storage scheme.
+      # For a separate library file for each menu data (1 menu/1 library file),
+      # or for the run-time program to contain the Main Menu data (1 Main menu/run-time script),
+      # then see f_menu_main_TEMPLATE in common_bash_function.lib
       #
-      # Create generated menu script from array data.
+      # Specify the library file name with menu item data.
+      # ARRAY_SOURCE_FILE (Not a temporay file) includes menu items
+      # from one or more menus (multiple menus/1 library file ARRAY_SOURCE_FILE).
+      ARRAY_SOURCE_FILE=$3
+      #
+      #
+      #================================================================================
+      # EDIT THE LINE BELOW TO DEFINE MENU_TITLE AS THE ACTUAL TITLE OF THE MENU THAT
+      # CONTAINS THE MENU ITEM DATA. THE LINES OF DATA ARE PREFIXED BY "#@@".
+      #================================================================================
+      #
       #
       # Note: ***If Menu title contains spaces,
       #       ***the size of the menu window will be too narrow.
       #
       # Menu title MUST use underscores instead of spaces.
-      MENU_TITLE="Upgrade_Menu"
-      TEMP_FILE=$THIS_DIR/$THIS_FILE"_menu_main_temp.txt"
+      MENU_TITLE=$2
       #
-      f_create_show_menu $1 $GENERATED_FILE $MENU_TITLE $MAX_LENGTH $MAX_LINES $MAX_CHOICE_LENGTH $TEMP_FILE
+      # Examples of valid $2 parameters:
+      # MENU_TITLE="Main_Menu"
+      # MENU_TITLE="Task_Menu"
+      # MENU_TITLE="Utility_Menu"
       #
-      if [ -r $GENERATED_FILE ] ; then
-         rm $GENERATED_FILE
-      fi
+      # The MENU_TITLE must match the strings in the ARRAY_SOURCE_FILE.
       #
-      if [ -r $TEMP_FILE ] ; then
+      #  Example:
+      #   The run-time script file, "ice_cream.sh" may also contain the data
+      #   for both Main menu and sub-menus.
+      #
+      #     MENU_TITLE="All_Ice_Cream_Menu"
+      #     ARRAY_SOURCE_FILE="ice_cream.sh"
+      #
+      #   If you have a lot of menus, you may want to have all the menu data
+      #   for both Main menu and sub-menus in a separate library file,
+      #   "all_ice_cream_menus.lib".
+      #
+      #     MENU_TITLE="All_Ice_Cream_Menu"
+      #     ARRAY_SOURCE_FILE="all_ice_cream_menus.lib"
+      #
+      # Format for $ARRAY_SOURCE_FILE: ("ice_cream.sh" or "all_ice_cream_menus.lib")
+      #
+      #  Listing of $ARRAY_SOURCE_FILE ("ice_cream.sh" or "all_ice_cream_menus.lib")
+      #          which includes menu item data:
+      #
+      #  Start Listing Tasty Ice Cream Menu (Required header, do not delete).
+      #      Data for Menu item 1
+      #      Data for Menu item 2
+      #      Data for Menu item 3
+      #  End Listing Tasty Ice Cream Menu (Required line, do not delete).
+      #
+      #  Start Listing Ice Cream Toppings Menu (Required header, do not delete).
+      #      Data for Menu item 1
+      #      Data for Menu item 2
+      #      Data for Menu item 3
+      #  End Listing Ice Cream Toppings Menu (Required line, do not delete).
+      #
+      TEMP_FILE=$THIS_DIR/$THIS_FILE"_menu_temp.txt"
+      #
+      # GENERATED_FILE (The name of a temporary library file which contains the code to display the sub-menu).
+      GENERATED_FILE=$THIS_DIR/$THIS_FILE"_menu_generated.lib"
+      #
+      # ARRAY_TEMP_FILE (Temporary file) includes menu items imported from $ARRAY_SOURCE_FILE of a single menu.
+      ARRAY_TEMP_FILE=$THIS_DIR/$THIS_FILE"_menu_array_generated.lib"
+      #
+      # ARRAY_FILE is used by f_update_menu_gui and f_update_menu_txt.
+      # It is not included in formal passed parameters but is used anyways
+      # in the $GENERATED_FILE as a line: "source $ARRAY_FILE".
+      # I wanted to retire this variable name, but it has existed in the
+      # common_bash_function.lib library for quite a while.
+      ARRAY_FILE=$GENERATED_FILE
+      #
+      # When using f_create_a_menu, all subsequent sub-menus do not need a separate
+      # hard-coded function, since f_create_a_menu will generate sub-menu functions as needed.
+      #
+      # List of inputs for f_create_a_menu.
+      #
+      #  Inputs: $1 - "text", "dialog" or "whiptail" The command-line user-interface application in use.
+      #          $2 - GENERATED_FILE (The name of a temporary library file containing the suggested phrase "generated.lib" which contains the code to display the sub-menu).
+      #          $3 - MENU_TITLE (Title of the sub-menu)
+      #          $4 - TEMP_FILE (Temporary file).
+      #          $5 - ARRAY_TEMP_FILE (Temporary file) includes menu items imported from $ARRAY_SOURCE_FILE of a single menu.
+      #          $6 - ARRAY_SOURCE_FILE (Not a temporary file) includes menu items from multiple menus.
+      #
+      f_create_a_menu $1 $GENERATED_FILE $MENU_TITLE $TEMP_FILE $ARRAY_TEMP_FILE $ARRAY_SOURCE_FILE
+      #
+      if [ -e $TEMP_FILE ] ; then
          rm $TEMP_FILE
       fi
       #
-} # End of function f_menu_main.
+      if [ -e  $GENERATED_FILE ] ; then
+         rm  $GENERATED_FILE
+      fi
+      #
+} # End of function f_menu_main_all_menus_TEMPLATE
 #
 # +----------------------------------------+
 # |  Function fdl_dwnld_file_from_web_site |
 # +----------------------------------------+
 #
-#     Rev: 2021-03-08
-#  Inputs: $1=GitHub Repository
-#          $2=file name to download.
+#     Rev: 2024-02-25
+#  Inputs: $1 - GitHub Repository
+#          $2 - file name to download.
 #    Uses: None.
 # Outputs: None.
 #
@@ -639,41 +766,29 @@ f_menu_main () {
 fdl_dwnld_file_from_web_site () {
       #
       # $1 ends with a slash "/" so can append $2 immediately after $1.
-      echo
-      echo ">>>>>>>>>>>>>>>>>>>><<<<<<<<<<<<<<<<<<<<<"
-      echo ">>> Download file from Web Repository <<<"
-      echo ">>>>>>>>>>>>>>>>>>>><<<<<<<<<<<<<<<<<<<<<"
-      echo
       wget --show-progress $1$2
       ERROR=$?
+      #
+      # Make downloaded file executable.
+      chmod 755 $2
+      #
       if [ $ERROR -ne 0 ] ; then
             echo
             echo ">>>>>>>>>>>>>><<<<<<<<<<<<<<"
             echo ">>> wget download failed <<<"
             echo ">>>>>>>>>>>>>><<<<<<<<<<<<<<"
             echo
-            echo "Error copying from Web Repository file: \"$2.\""
+            echo "Error copying file: \"$2.\""
             echo
-      else
-         # Make file executable (useable).
-         chmod +x $2
-         #
-         if [ -x $2 ] ; then
-            # File is good.
-            ERROR=0
-         else
+            echo "from GitHub Repository:"
+            echo "$WEB_REPOSITORY_URL"
             echo
-            echo ">>>>>>>>>>>>>>>>>>>>>>>>>><<<<<<<<<<<<<<<<<<<<<<<<<<<"
-            echo ">>> File Error after download from Web Repository <<<"
-            echo ">>>>>>>>>>>>>>>>>>>>>>>>>><<<<<<<<<<<<<<<<<<<<<<<<<<<"
+            echo -e "Warning: If the Github Repository is \"Private\","
+            echo "         then anonymous downloads are not permitted."
             echo
-            echo "$2 is missing or file is not executable."
+            echo ">>>>>>>>>>>>>><<<<<<<<<<<<<<"
             echo
-         fi
       fi
-      #
-      # Make downloaded file executable.
-      chmod 755 $2
       #
 } # End of function fdl_dwnld_file_from_web_site.
 #
@@ -681,9 +796,9 @@ fdl_dwnld_file_from_web_site () {
 # | Function fdl_dwnld_file_from_local_repository |
 # +-----------------------------------------------+
 #
-#     Rev: 2021-03-08
-#  Inputs: $1=Local Repository Directory.
-#          $2=File to download.
+#     Rev: 2024-02-25
+#  Inputs: $1 - Local Repository Directory.
+#          $2 - File to download.
 #    Uses: TEMP_FILE.
 # Outputs: ERROR.
 #
@@ -695,13 +810,11 @@ fdl_dwnld_file_from_web_site () {
 #
 fdl_dwnld_file_from_local_repository () {
       #
-      echo
-      echo ">>>>>>>>>>>>>>>>>>>><<<<<<<<<<<<<<<<<<<"
-      echo ">>> File Copy from Local Repository <<<"
-      echo ">>>>>>>>>>>>>>>>>>>><<<<<<<<<<<<<<<<<<<"
-      echo
       eval cp -p $1/$2 .
       ERROR=$?
+      #
+      # Make downloaded file executable.
+      chmod 755 $2
       #
       if [ $ERROR -ne 0 ] ; then
          echo
@@ -709,26 +822,14 @@ fdl_dwnld_file_from_local_repository () {
          echo ">>> File Copy Error from Local Repository <<<"
          echo ">>>>>>>>>>>>>>>>>>>>>>><<<<<<<<<<<<<<<<<<<<<<"
          echo
-         echo -e "Error copying from Local Repository file: \"$2.\""
+         echo -e "Error copying file: \"$2.\""
+         echo
+         echo "from Local Repository:"
+         echo "$LOCAL_REPO_DIR"
+         echo
+         echo ">>>>>>>>>>>>>>>>>>>>>>><<<<<<<<<<<<<<<<<<<<<<"
          echo
          ERROR=1
-      else
-         # Make file executable (useable).
-         chmod +x $2
-         #
-         if [ -x $2 ] ; then
-            # File is good.
-            ERROR=0
-         else
-            echo
-            echo ">>>>>>>>>>>>>>>>>>>>>>>>><<<<<<<<<<<<<<<<<<<<<<<<<<"
-            echo ">>> File Error after copy from Local Repository <<<"
-            echo ">>>>>>>>>>>>>>>>>>>>>>>>><<<<<<<<<<<<<<<<<<<<<<<<<<"
-            echo
-            echo -e "File \"$2\" is missing or file is not executable."
-            echo
-            ERROR=1
-         fi
       fi
       #
       if [ $ERROR -eq 0 ] ; then
@@ -743,12 +844,12 @@ fdl_dwnld_file_from_local_repository () {
 # |       Function fdl_mount_local      |
 # +-------------------------------------+
 #
-#     Rev: 2021-03-10
-#  Inputs: $1=Server Directory.
-#          $2=Local Mount Point Directory
+#     Rev: 2024-02-25
+#  Inputs: $1 - Server Directory.
+#          $2 - Local Mount Point Directory
 #          TEMP_FILE
 #    Uses: TARGET_DIR, UPDATE_FILE, ERROR, SMBUSER, PASSWORD.
-# Outputs: ERROR.
+# Outputs: QUIT, ERROR.
 #
 # Summary: Mount directory using Samba and CIFS and echo error message.
 #          Cannot be dependent on "common_bash_function.lib" as this library
@@ -758,40 +859,115 @@ fdl_dwnld_file_from_local_repository () {
 #
 fdl_mount_local () {
       #
-      # Mount local repository on mount-point.
-      # Write any error messages to file $TEMP_FILE. Get status of mountpoint, mounted?.
-      mountpoint $2 >/dev/null 2>$TEMP_FILE
+      TEMP_FILE=$THIS_DIR/$THIS_FILE"_temp.txt"
+      #
+      # Get status of mountpoint, mounted? Do not display status.
+      mountpoint $2 >/dev/null
       ERROR=$?
-      if [ $ERROR -ne 0 ] ; then
-         # Mount directory.
-         # Cannot use any user prompted read answers if this function is in a loop where file is a loop input.
-         # The read statements will be treated as the next null parameters in the loop without user input.
-         # To solve this problem, specify input from /dev/tty "the keyboard".
+      if [ $ERROR -eq 0 ] ; then
+         # Directory is already mounted.
+         # Outputs ERROR=0.
+         # Quit loop.
+         QUIT=1
+      else
+         # Mount failed, Do you want to try again?
+         DEFAULT_ANS="Y"
+         QUES_STR="Failed to mount\n\nShare-point:\n$1\n\nonto\n\nMount-point:\n$2\n\nTry another password to mount $1?"
          #
-         echo
-         read -p "Enter user name: " SMBUSER < /dev/tty
-         echo
-         read -s -p "Enter Password: " PASSWORD < /dev/tty
-         echo sudo mount -t cifs $1 $2
-         sudo mount -t cifs -o username="$SMBUSER" -o password="$PASSWORD" $1 $2
+         clear  # Blank screen.
          #
-         # Write any error messages to file $TEMP_FILE. Get status of mountpoint, mounted?.
-         mountpoint $2 >/dev/null 2>$TEMP_FILE
-         ERROR=$?
+         # Does $QUES_STR contain "\n"?  Does the string $QUES_STR contain multiple sentences?
+         case $QUES_STR in
+              *\n*)
+                 # Yes, string $QUES_STR contains multiple sentences.
+                 #
+                 # Command-Line interface (CLI) does not have option "--colors" with "\Z" commands for font color bold/normal.
+                 # Use command "sed" with "-e" to filter out multiple "\Z" commands.
+                 # Filter out "\Z[0-7]", "\Zb", \ZB", "\Zr", "\ZR", "\Zu", "\ZU", "\Zn".
+                 ZNO=$(echo $QUES_STR | sed -e 's|\\Z0||g' -e 's|\\Z1||g' -e 's|\\Z2||g' -e 's|\\Z3||g' -e 's|\\Z4||g' -e 's|\\Z5||g' -e 's|\\Z6||g' -e 's|\\Z7||g' -e 's|\\Zb||g' -e 's|\\ZB||g' -e 's|\\Zr||g' -e 's|\\ZR||g' -e 's|\\Zu||g' -e 's|\\ZU||g' -e 's|\\Zn||g')
+                 TEXT_STR="$ZNO"
+              ;;
+              *)
+                 # No, string $QUES_STR contains a single sentence.
+                 #
+                 # Create a text file from the string.
+                 TEXT_STR="$QUES_STR"
+              ;;
+         esac
          #
-         if [ $ERROR -ne 0 ] ; then
+         case $DEFAULT_ANS in
+              [Yy] | [Yy][Ee][Ss])
+                 # "Yes" is the default answer.
+                 echo -e -n "$TEXT_STR (Y/n) "; read ANS # < /dev/tty
+                 #
+                 case $ANS in
+                      [Nn] | [Nn][Oo])
+                         ANS=1  # No.
+                      ;;
+                      *)
+                         ANS=0  # Yes (Default).
+                      ;;
+                 esac
+              ;;
+              [Nn] | [Nn][Oo])
+                 # "No" is the default answer.
+                 echo -e -n "$TEXT_STR (y/N) "; read ANS # < /dev/tty
+                 case $ANS in
+                      [Yy] | [Yy][Ee] | [Yy][Ee][Ss])
+                         ANS=0  # Yes.
+                      ;;
+                      *)
+                         ANS=1  # No (Default).
+                      ;;
+                 esac
+              ;;
+         esac
+         #
+         # Outputs user response to $ANS.
+         # Try another password to mount $1?"
+         if [ $ANS -eq 0 ] ; then
+            # Yes, try another SMB username and password to mount Share-point.
+            QUIT=0
+            # Try again to mount.
+            # Set the default username to the SMB username entered previously.
+            #
+            # Cannot use any user prompted read answers if this function is in a loop where file is a loop input.
+            # The read statements will be treated as the next null parameters in the loop without user input.
+            # To solve this problem, specify input from /dev/tty "the keyboard".
+            #
             echo
-            echo ">>>>>>>>>><<<<<<<<<<<"
-            echo ">>> Mount failure <<<"
-            echo ">>>>>>>>>><<<<<<<<<<<"
+            echo "Mounting share-point $1 onto local mount-point $2"
             echo
-            echo -e "Directory mount-point \"$2\" is not mounted."
+            read -p "Enter user name: " SMBUSER < /dev/tty
             echo
-            echo -e "Mount using Samba failed. Are \"samba\" and \"cifs-utils\" installed?"
-            echo "------------------------------------------------------------------------"
-            echo
+            read -s -p "Enter Password: " PASSWORD < /dev/tty
+            echo sudo mount -t cifs $1 $2
+            sudo mount -t cifs -o username="$SMBUSER" -o password="$PASSWORD" $1 $2
+            unset SMBUSER PASSWORD
+            #
+            # Write any error messages to file $TEMP_FILE. Get status of mountpoint, mounted?.
+            mountpoint $2 >/dev/null 2>$TEMP_FILE
+            ERROR=$?
+            #
+            if [ $ERROR -eq 0 ] ; then
+               # Successful mounting of share-point $1 onto local mount-point $2.
+               # Outputs ERROR=0.
+               QUIT=1
+            else
+               # Failed to mount share-point $1 onto local mount-point $2.
+               # Outputs ERROR=1.
+               QUIT=0
+            fi
+         else
+            # No, do not try another password just return to previous menu. Exit loop.
+            # Quit f_mount loop, return to previous menu.
+            # Outputs ERROR=1.
+            QUIT=1
          fi
-         unset SMBUSER PASSWORD
+      fi
+      #
+      if [ -e  $TEMP_FILE ] ; then
+         rm  $TEMP_FILE
       fi
       #
 } # End of function fdl_mount_local.
@@ -800,8 +976,8 @@ fdl_mount_local () {
 # |        Function fdl_source         |
 # +------------------------------------+
 #
-#     Rev: 2021-03-25
-#  Inputs: $1=File name to source.
+#     Rev: 2022-10-10
+#  Inputs: $1 - File name to source.
 # Outputs: ERROR.
 #
 # Summary: Source the provided library file and echo error message.
@@ -842,7 +1018,7 @@ fdl_source () {
 # |  Function fdl_download_missing_scripts |
 # +----------------------------------------+
 #
-#     Rev: 2021-03-11
+#     Rev: 2024-02-21
 #  Inputs: $1 - File containing a list of all file dependencies.
 #          $2 - File name of generated list of missing file dependencies.
 # Outputs: ANS.
@@ -865,6 +1041,10 @@ fdl_source () {
 #
 fdl_download_missing_scripts () {
       #
+      # Initialize variables.
+      #
+      TEMP_FILE=$THIS_FILE"_temp.txt"
+      #
       # Delete any existing temp file.
       if [ -r  $2 ] ; then
          rm  $2
@@ -874,24 +1054,26 @@ fdl_download_missing_scripts () {
       # Create new list of files that need to be downloaded.
       # ****************************************************
       #
-      # While-loop will read the file names listed in FILE_LIST (list of
+      # While-loop will read the file names listed in FILE_LIST ($1 list of
       # script and library files) and detect which are missing and need
-      # to be downloaded and then put those file names in FILE_DL_LIST.
+      # to be downloaded and then put those file names in FILE_DL_LIST ($2).
+      #
+      #
+      # Download files from Local Repository or Web GitHub Repository
+      # or extract files from the compressed file "cli-app-menu-new-main.zip"
+      # which may be downloaded from the repository on the Github.com website.
       #
       while read LINE
             do
+               ERROR=0
+               #
                FILE=$(echo $LINE | awk -F "^" '{ print $1 }')
-               if [ ! -x $FILE ] ; then
-                  # File needs to be downloaded or is not executable.
-                  # Write any error messages to file $TEMP_FILE.
-                  chmod +x $FILE 2>$TEMP_FILE
-                  ERROR=$?
-                  #
-                  if [ $ERROR -ne 0 ] ; then
-                     # File needs to be downloaded. Add file name to a file list in a text file.
-                     # Build list of files to download.
-                     echo $LINE >> $2
-                  fi
+               #
+               # Does the file exist?
+               if [ ! -e $FILE ] ; then
+                  # No, file needs to be downloaded.
+                  # Build list of files to download so add file name to download list.
+                  echo $LINE >> $2
                fi
             done < $1
       #
@@ -907,13 +1089,31 @@ fdl_download_missing_scripts () {
                   echo $LINE | awk -F "^" '{ print $1 }'
                done < $2
          echo
-         echo "You will need to present credentials."
+         echo "You may need to present credentials, unless anonymous downloads are permitted."
          echo
          echo -n "Press '"Enter"' key to continue." ; read X ; unset X
          #
          #----------------------------------------------------------------------------------------------
          # From list of files to download created above $FILE_DL_LIST, download the files one at a time.
          #----------------------------------------------------------------------------------------------
+         #
+         # Downloaded the list of files $DL_FILE from the Local Repository?
+         grep Local^ $2 >/dev/null
+         ERROR=$?
+         #
+         # Initialize for while-loop.
+         QUIT=0
+         #
+         # Are any of the missing files to be downloaded from the Local Repository?
+         if [ $ERROR -eq 0 ] ; then
+            # Yes, there are files to be downloaded from the Local Repository.
+            #
+            # Are LAN File Server directories available on Local Mount-point?
+             while [ $QUIT -ne 1 ]  # Start loop.
+                   do
+                     fdl_mount_local $SERVER_DIR $MP_DIR
+                   done
+         fi
          #
          while read LINE
                do
@@ -926,17 +1126,16 @@ fdl_download_missing_scripts () {
                   # Initialize Error Flag.
                   ERROR=0
                   #
-                  # If a file only found in the Local Repository has source changed
-                  # to "Web" because LAN connectivity has failed, then do not download.
+                  # If a file which only exists in the Local Repository has
+                  # its source changed to "Web" because LAN connectivity has
+                  # failed, then do not download since the file is not in a
+                  # GitHub.com Repository.
                   if [ -z $DL_REPOSITORY ] && [ $DL_SOURCE = "Web" ] ; then
                      ERROR=1
                   fi
-                  #
                   case $DL_SOURCE in
                        Local)
                           # Download from Local Repository on LAN File Server.
-                          # Are LAN File Server directories available on Local Mount-point?
-                          fdl_mount_local $SERVER_DIR $MP_DIR
                           #
                           if [ $ERROR -ne 0 ] ; then
                              # Failed to mount LAN File Server directory on Local Mount-point.
@@ -957,8 +1156,10 @@ fdl_download_missing_scripts () {
                        Web)
                           # Download from Web Repository.
                           fdl_dwnld_file_from_web_site $DL_REPOSITORY $DL_FILE
-                          if [ $ERROR -ne 0 ] ; then
-                             # Failed so mount LAN File Server directory on Local Mount-point.
+                          if [ $ERROR -ne 0 ] && [ $LOCAL_REPO_CRED_FAIL -eq 0 ] ; then
+                             # Failed to download from Web Repository.
+                             # So download from Local Repository.
+                             # Try to mount LAN File Server directory on Local Mount-point.
                              fdl_mount_local $SERVER_DIR $MP_DIR
                              #
                              if [ $ERROR -eq 0 ] ; then
@@ -1560,7 +1761,7 @@ f_about $GUI "NOK" 1
 # Run Main Code.
 #***************
 #
-f_menu_main $GUI
+f_menu_main_all_menus $GUI "Upgrade_Menu" "$THIS_FILE"
 #
 # Delete temporary files.
 #
